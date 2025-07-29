@@ -14,7 +14,239 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leagues: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      nationalities: {
+        Row: {
+          created_at: string
+          flag_url: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          flag_url?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          flag_url?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      product_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          product_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          product_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_notes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_sizes: {
+        Row: {
+          id: string
+          product_id: string
+          size_id: string
+          stock_quantity: number | null
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          size_id: string
+          stock_quantity?: number | null
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          size_id?: string
+          stock_quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_sizes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_sizes_size_id_fkey"
+            columns: ["size_id"]
+            isOneToOne: false
+            referencedRelation: "sizes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_special_edition: boolean | null
+          league_id: string | null
+          name: string
+          nationality_id: string | null
+          price: number
+          season: string | null
+          special_edition_notes: string | null
+          stock_quantity: number | null
+          team_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_special_edition?: boolean | null
+          league_id?: string | null
+          name: string
+          nationality_id?: string | null
+          price: number
+          season?: string | null
+          special_edition_notes?: string | null
+          stock_quantity?: number | null
+          team_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_special_edition?: boolean | null
+          league_id?: string | null
+          name?: string
+          nationality_id?: string | null
+          price?: number
+          season?: string | null
+          special_edition_notes?: string | null
+          stock_quantity?: number | null
+          team_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_nationality_id_fkey"
+            columns: ["nationality_id"]
+            isOneToOne: false
+            referencedRelation: "nationalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sizes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
