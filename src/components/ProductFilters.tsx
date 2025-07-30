@@ -35,10 +35,10 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [nationalities, setNationalities] = useState<Nationality[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
-  const [selectedLeague, setSelectedLeague] = useState<string>("");
-  const [selectedNationality, setSelectedNationality] = useState<string>("");
-  const [selectedSize, setSelectedSize] = useState<string>("");
-  const [selectedSeason, setSelectedSeason] = useState<string>("");
+  const [selectedLeague, setSelectedLeague] = useState<string>("all");
+  const [selectedNationality, setSelectedNationality] = useState<string>("all");
+  const [selectedSize, setSelectedSize] = useState<string>("all");
+  const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [specialEditionOnly, setSpecialEditionOnly] = useState(false);
 
   useEffect(() => {
@@ -47,11 +47,11 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
 
   useEffect(() => {
     onFiltersChange({
-      league: selectedLeague || undefined,
-      nationality: selectedNationality || undefined,
-      size: selectedSize || undefined,
+      league: selectedLeague === "all" ? undefined : selectedLeague,
+      nationality: selectedNationality === "all" ? undefined : selectedNationality,
+      size: selectedSize === "all" ? undefined : selectedSize,
       specialEdition: specialEditionOnly || undefined,
-      season: selectedSeason || undefined,
+      season: selectedSeason === "all" ? undefined : selectedSeason,
     });
   }, [selectedLeague, selectedNationality, selectedSize, specialEditionOnly, selectedSeason, onFiltersChange]);
 
@@ -72,10 +72,10 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
   };
 
   const clearFilters = () => {
-    setSelectedLeague("");
-    setSelectedNationality("");
-    setSelectedSize("");
-    setSelectedSeason("");
+    setSelectedLeague("all");
+    setSelectedNationality("all");
+    setSelectedSize("all");
+    setSelectedSeason("all");
     setSpecialEditionOnly(false);
   };
 
@@ -92,7 +92,7 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
               <SelectValue placeholder="Todas as ligas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as ligas</SelectItem>
+              <SelectItem value="all">Todas as ligas</SelectItem>
               {leagues.map((league) => (
                 <SelectItem key={league.id} value={league.id}>
                   {league.name} ({league.country})
@@ -109,7 +109,7 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
               <SelectValue placeholder="Todas as nacionalidades" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as nacionalidades</SelectItem>
+              <SelectItem value="all">Todas as nacionalidades</SelectItem>
               {nationalities.map((nationality) => (
                 <SelectItem key={nationality.id} value={nationality.id}>
                   {nationality.name}
@@ -126,7 +126,7 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
               <SelectValue placeholder="Todos os tamanhos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os tamanhos</SelectItem>
+              <SelectItem value="all">Todos os tamanhos</SelectItem>
               {sizes.map((size) => (
                 <SelectItem key={size.id} value={size.id}>
                   {size.name}
@@ -143,7 +143,7 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
               <SelectValue placeholder="Todas as temporadas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as temporadas</SelectItem>
+              <SelectItem value="all">Todas as temporadas</SelectItem>
               <SelectItem value="2024/25">2024/25</SelectItem>
               <SelectItem value="2023/24">2023/24</SelectItem>
               <SelectItem value="2022/23">2022/23</SelectItem>
