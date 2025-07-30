@@ -24,42 +24,48 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCardProps) => {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <CardHeader className="p-0">
-        <div className="aspect-square bg-muted flex items-center justify-center">
+    <Card className="overflow-hidden hover-lift shadow-card border-2 border-transparent hover:border-primary/30 transition-smooth bg-card/50 backdrop-blur-sm">
+      <CardHeader className="p-0 relative">
+        <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center relative overflow-hidden">
           {product.image_url ? (
             <img
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-smooth hover:scale-110"
             />
           ) : (
-            <div className="text-muted-foreground text-4xl">⚽</div>
+            <div className="text-primary text-6xl animate-glow-pulse">⚽</div>
+          )}
+          {product.is_special_edition && (
+            <div className="absolute top-3 right-3">
+              <Badge variant="premium" className="rotate-12">
+                ESPECIAL
+              </Badge>
+            </div>
           )}
         </div>
       </CardHeader>
       
-      <CardContent className="p-4">
-        <div className="space-y-2">
+      <CardContent className="p-6">
+        <div className="space-y-3">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
-            {product.is_special_edition && (
-              <Badge variant="secondary" className="ml-2 shrink-0">
-                Edição Especial
-              </Badge>
-            )}
+            <CardTitle className="text-xl font-bold line-clamp-2 text-foreground">
+              {product.name}
+            </CardTitle>
           </div>
           
-          <p className="text-sm text-muted-foreground">{product.team_name}</p>
+          <p className="text-lg font-semibold text-accent">{product.team_name}</p>
           
           {product.leagues && (
-            <p className="text-xs text-muted-foreground">
-              {product.leagues.name} • {product.leagues.country}
+            <p className="text-sm text-muted-foreground font-medium">
+              🏆 {product.leagues.name} • {product.leagues.country}
             </p>
           )}
           
           {product.season && (
-            <p className="text-xs text-muted-foreground">Temporada {product.season}</p>
+            <Badge variant="outline" className="text-xs">
+              📅 Temporada {product.season}
+            </Badge>
           )}
           
           {product.description && (
@@ -68,29 +74,34 @@ export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCard
             </p>
           )}
           
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-lg font-bold text-primary">
+          <div className="flex items-center justify-between pt-4 border-t border-primary/20">
+            <span className="price-highlight text-2xl font-black">
               R$ {product.price.toFixed(2)}
             </span>
+            {product.special_edition_notes && (
+              <Badge variant="default" className="text-xs">
+                ⭐ Exclusiva
+              </Badge>
+            )}
           </div>
         </div>
       </CardContent>
       
-      <CardFooter className="p-4 pt-0 space-x-2">
+      <CardFooter className="p-6 pt-0 space-y-3">
         <Button 
           variant="outline" 
-          size="sm" 
+          size="lg" 
           onClick={() => onViewDetails?.(product.id)}
-          className="flex-1"
+          className="w-full font-semibold"
         >
-          Ver Detalhes
+          👁️ Ver Detalhes
         </Button>
         <Button 
-          size="sm" 
+          size="lg" 
           onClick={() => onAddToCart?.(product.id)}
-          className="flex-1"
+          className="w-full font-bold text-lg"
         >
-          Adicionar ao Carrinho
+          🛒 Adicionar ao Carrinho
         </Button>
       </CardFooter>
     </Card>

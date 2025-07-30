@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface League {
@@ -80,13 +81,15 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Filtros</CardTitle>
+    <Card className="shadow-card border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
+      <CardHeader className="gradient-dark">
+        <CardTitle className="text-xl font-bold text-primary">
+          🔍 Filtros Premium
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Liga</Label>
+      <CardContent className="space-y-6 p-6">
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-foreground">🏆 Liga</Label>
           <Select value={selectedLeague} onValueChange={setSelectedLeague}>
             <SelectTrigger>
               <SelectValue placeholder="Todas as ligas" />
@@ -102,8 +105,8 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Nacionalidade</Label>
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-foreground">🌍 Nacionalidade</Label>
           <Select value={selectedNationality} onValueChange={setSelectedNationality}>
             <SelectTrigger>
               <SelectValue placeholder="Todas as nacionalidades" />
@@ -119,8 +122,8 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Tamanho</Label>
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-foreground">📏 Tamanho</Label>
           <Select value={selectedSize} onValueChange={setSelectedSize}>
             <SelectTrigger>
               <SelectValue placeholder="Todos os tamanhos" />
@@ -136,8 +139,8 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Temporada</Label>
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-foreground">📅 Temporada</Label>
           <Select value={selectedSeason} onValueChange={setSelectedSeason}>
             <SelectTrigger>
               <SelectValue placeholder="Todas as temporadas" />
@@ -152,23 +155,25 @@ export const ProductFilters = ({ onFiltersChange }: ProductFiltersProps) => {
           </Select>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
           <Checkbox
             id="special-edition"
             checked={specialEditionOnly}
             onCheckedChange={(checked) => setSpecialEditionOnly(checked as boolean)}
+            className="border-primary data-[state=checked]:bg-primary"
           />
-          <Label htmlFor="special-edition" className="text-sm">
-            Apenas edições especiais
+          <Label htmlFor="special-edition" className="text-sm font-semibold text-foreground cursor-pointer">
+            ⭐ Apenas edições especiais
           </Label>
         </div>
 
-        <button
+        <Button
           onClick={clearFilters}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          variant="ghost"
+          className="w-full text-muted-foreground hover:text-primary transition-smooth"
         >
-          Limpar filtros
-        </button>
+          🔄 Limpar filtros
+        </Button>
       </CardContent>
     </Card>
   );

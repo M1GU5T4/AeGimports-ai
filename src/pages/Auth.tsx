@@ -82,24 +82,32 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">⚽ FutebolShirts</CardTitle>
-          <CardDescription>Entre ou crie sua conta para continuar</CardDescription>
+    <div className="min-h-screen flex items-center justify-center gradient-dark p-4">
+      <Card className="w-full max-w-md shadow-elegant border-2 border-primary/30 bg-card/95 backdrop-blur-sm">
+        <CardHeader className="text-center gradient-primary rounded-t-lg">
+          <CardTitle className="text-3xl font-bold text-accent-foreground animate-glow-pulse">
+            ⚽ FutebolShirts
+          </CardTitle>
+          <CardDescription className="text-accent-foreground/80 font-medium">
+            Entre ou crie sua conta para continuar
+          </CardDescription>
         </CardHeader>
         
         <Tabs defaultValue="signin" className="w-full">
-          <CardContent>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Criar Conta</TabsTrigger>
+          <CardContent className="p-8">
+            <TabsList className="grid w-full grid-cols-2 bg-accent/20 p-1">
+              <TabsTrigger value="signin" className="font-semibold data-[state=active]:gradient-primary data-[state=active]:text-accent-foreground">
+                🔑 Entrar
+              </TabsTrigger>
+              <TabsTrigger value="signup" className="font-semibold data-[state=active]:gradient-primary data-[state=active]:text-accent-foreground">
+                ✨ Criar Conta
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin" className="space-y-4 mt-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+            <TabsContent value="signin" className="space-y-6 mt-6">
+              <form onSubmit={handleSignIn} className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="signin-email" className="text-sm font-semibold">📧 Email</Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -107,11 +115,12 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="border-primary/30 focus:border-primary transition-smooth h-12"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Senha</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="signin-password" className="text-sm font-semibold">🔒 Senha</Label>
                   <Input
                     id="signin-password"
                     type="password"
@@ -119,19 +128,20 @@ export default function Auth() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="border-primary/30 focus:border-primary transition-smooth h-12"
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Entrando..." : "Entrar"}
+                <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={loading}>
+                  {loading ? "⏳ Entrando..." : "🚀 Entrar"}
                 </Button>
               </form>
             </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4 mt-4">
-              <form onSubmit={handleSignUp} className="space-y-4">
+            <TabsContent value="signup" className="space-y-5 mt-6">
+              <form onSubmit={handleSignUp} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nome Completo</Label>
+                  <Label htmlFor="signup-name" className="text-sm font-semibold">👤 Nome Completo</Label>
                   <Input
                     id="signup-name"
                     type="text"
@@ -139,11 +149,12 @@ export default function Auth() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
+                    className="border-primary/30 focus:border-primary transition-smooth h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Telefone</Label>
+                  <Label htmlFor="signup-phone" className="text-sm font-semibold">📱 Telefone</Label>
                   <Input
                     id="signup-phone"
                     type="tel"
@@ -151,11 +162,12 @@ export default function Auth() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
+                    className="border-primary/30 focus:border-primary transition-smooth h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="text-sm font-semibold">📧 Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -163,11 +175,12 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="border-primary/30 focus:border-primary transition-smooth h-11"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Senha</Label>
+                  <Label htmlFor="signup-password" className="text-sm font-semibold">🔒 Senha</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -176,11 +189,12 @@ export default function Auth() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                    className="border-primary/30 focus:border-primary transition-smooth h-11"
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Criando conta..." : "Criar Conta"}
+                <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={loading}>
+                  {loading ? "⏳ Criando conta..." : "✨ Criar Conta"}
                 </Button>
               </form>
             </TabsContent>

@@ -109,38 +109,41 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+      <header className="gradient-dark border-b border-primary/20 shadow-elegant">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-primary">⚽ FutebolShirts</h1>
+              <h1 className="text-3xl font-bold text-primary animate-glow-pulse">
+                ⚽ FutebolShirts
+              </h1>
+              <Badge className="badge-premium hidden sm:block">Premium Store</Badge>
             </div>
 
             <div className="hidden md:flex items-center space-x-4 flex-1 max-w-md mx-8">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary" />
                 <Input
                   placeholder="Buscar camisas, times..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 border-primary/30 focus:border-primary bg-black/20 text-white placeholder:text-gray-300 transition-smooth"
                 />
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
+            <div className="flex items-center space-x-3">
+              <Button variant="premium" size="sm" className="relative">
                 <ShoppingCart className="h-4 w-4" />
-                <Badge variant="secondary" className="ml-2">0</Badge>
+                <Badge variant="default" className="ml-2 animate-glow-pulse">0</Badge>
               </Button>
               
               {user ? (
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="text-primary hover:text-accent-foreground">
                     <User className="h-4 w-4" />
-                    <span className="ml-2 hidden sm:inline">{user.email}</span>
+                    <span className="ml-2 hidden sm:inline text-white">{user.email}</span>
                   </Button>
                   <Button onClick={signOut} variant="outline" size="sm">
                     <LogOut className="h-4 w-4" />
@@ -157,12 +160,12 @@ const Index = () => {
           {/* Mobile search */}
           <div className="md:hidden mt-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary" />
               <Input
                 placeholder="Buscar camisas, times..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-12 border-primary/30 focus:border-primary bg-black/20 text-white placeholder:text-gray-300 transition-smooth"
               />
             </div>
           </div>
@@ -175,7 +178,7 @@ const Index = () => {
           <div className="lg:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline" className="w-full">
+                <Button variant="default" className="w-full">
                   <Menu className="h-4 w-4 mr-2" />
                   Filtros
                 </Button>
@@ -193,21 +196,24 @@ const Index = () => {
 
           {/* Products */}
           <div className="lg:col-span-3">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Camisas de Futebol</h2>
-              <p className="text-muted-foreground">
-                Encontradas {products.length} camisas
+            <div className="mb-8 animate-fade-in">
+              <h2 className="text-3xl font-bold mb-3 gradient-primary bg-clip-text text-transparent">
+                Camisas de Futebol Premium
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Encontradas <span className="price-highlight">{products.length}</span> camisas
               </p>
             </div>
 
             {loadingProducts ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-lg p-4 animate-pulse">
-                    <div className="aspect-square bg-muted rounded mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                  <div key={i} className="bg-card rounded-xl p-6 animate-pulse shadow-card">
+                    <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl mb-4"></div>
+                    <div className="space-y-3">
+                      <div className="h-5 bg-primary/20 rounded-lg w-3/4"></div>
+                      <div className="h-4 bg-accent/20 rounded-lg w-1/2"></div>
+                      <div className="h-6 bg-primary/30 rounded-lg w-1/3"></div>
                     </div>
                   </div>
                 ))}
@@ -222,14 +228,19 @@ const Index = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <ProductCard
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {products.map((product, index) => (
+                  <div
                     key={product.id}
-                    product={product}
-                    onAddToCart={handleAddToCart}
-                    onViewDetails={handleViewDetails}
-                  />
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <ProductCard
+                      product={product}
+                      onAddToCart={handleAddToCart}
+                      onViewDetails={handleViewDetails}
+                    />
+                  </div>
                 ))}
               </div>
             )}
