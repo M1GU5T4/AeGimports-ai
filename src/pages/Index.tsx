@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, LogOut, Menu } from "lucide-react";
+import { Search, ShoppingCart, User, LogOut, Menu, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +34,28 @@ const Index = () => {
   const [filters, setFilters] = useState<any>({});
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
+    } else if (user) {
+      checkUserType();
     }
   }, [user, loading, navigate]);
+
+  const checkUserType = async () => {
+    try {
+      // Verificar user_type no raw_user_meta_data
+      const userType = user?.user_metadata?.user_type;
+      setUserType(userType || null);
+      
+      console.log('User type:', userType); // Debug
+      console.log('User metadata:', user?.user_metadata); // Debug
+    } catch (error) {
+      console.error('Erro ao verificar tipo de usuário:', error);
+    }
+  };
 
   useEffect(() => {
     loadProducts();
@@ -141,6 +157,17 @@ const Index = () => {
               
               {user ? (
                 <div className="flex items-center space-x-2">
+                  {userType === 'dono' && (
+                    <Button 
+                      onClick={() => navigate("/admin")} 
+                      variant="default" 
+                      size="sm"
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Admin</span>
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" className="text-primary hover:text-accent-foreground">
                     <User className="h-4 w-4" />
                     <span className="ml-2 hidden sm:inline text-white">{user.email}</span>
