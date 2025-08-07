@@ -8,6 +8,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductFilters } from "@/components/ProductFilters";
 import { ProductNotes } from "@/components/ProductNotes";
+import { HeroSection } from "@/components/HeroSection";
+import { ModernProductCard } from "@/components/ModernProductCard";
+import { ModernProductFilters } from "@/components/ModernProductFilters";
+import { ModernProductGrid } from "@/components/ModernProductGrid";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,72 +31,57 @@ interface Product {
 }
 
 const Index = () => {
-  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState<any>({});
-  const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    league: "",
+    nationality: "",
+    season: "",
+    specialEdition: false,
+    priceRange: null as [number, number] | null
+  });
+  const [cartItems, setCartItems] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    } else if (user) {
+    if (user) {
       checkUserType();
+      loadProducts();
+    } else {
+      navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [user, navigate]);
 
   const checkUserType = async () => {
+    if (!user) return;
+    
     try {
-      // Verificar user_type no raw_user_meta_data
-      const userType = user?.user_metadata?.user_type;
-      setUserType(userType || null);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("user_id", user.id)
+        .single();
       
-      console.log('User type:', userType); // Debug
-      console.log('User metadata:', user?.user_metadata); // Debug
+      setUserType(profile?.user_type || null);
     } catch (error) {
-      console.error('Erro ao verificar tipo de usuário:', error);
+      console.error("Error checking user type:", error);
     }
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, [filters, searchTerm]);
-
   const loadProducts = async () => {
-    setLoadingProducts(true);
     try {
-      let query = supabase
+      setLoading(true);
+      const { data, error } = await supabase
         .from("products")
         .select(`
           *,
           leagues(name, country),
           nationalities(name)
-        `)
-        .eq("active", true);
-
-      // Apply search filter
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,team_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-      }
-
-      // Apply filters
-      if (filters.league) {
-        query = query.eq("league_id", filters.league);
-      }
-      if (filters.nationality) {
-        query = query.eq("nationality_id", filters.nationality);
-      }
-      if (filters.season) {
-        query = query.eq("season", filters.season);
-      }
-      if (filters.specialEdition) {
-        query = query.eq("is_special_edition", true);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
+        `);
 
       if (error) throw error;
       setProducts(data || []);
@@ -100,18 +89,58 @@ const Index = () => {
       console.error("Error loading products:", error);
       toast.error("Erro ao carregar produtos");
     } finally {
-      setLoadingProducts(false);
+      setLoading(false);
     }
   };
 
-  const handleAddToCart = (productId: string) => {
-    toast.success("Produto adicionado ao carrinho!");
-    // TODO: Implement cart functionality
+  const handleAddToCart = (product: Product) => {
+    setCartItems(prev => [...prev, product]);
+    toast.success(`${product.name} adicionado ao carrinho!`);
   };
 
-  const handleViewDetails = (productId: string) => {
-    setSelectedProduct(productId);
+  const handleViewDetails = (product: Product) => {
+    setSelectedProduct(product.id);
   };
+
+  const handleFiltersChange = (newFilters: any) => {
+    setFilters(newFilters);
+  };
+
+  const filteredProducts = products.filter((product) => {
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        product.name.toLowerCase().includes(searchLower) ||
+        product.team_name.toLowerCase().includes(searchLower) ||
+        (product.description && product.description.toLowerCase().includes(searchLower));
+      if (!matchesSearch) return false;
+    }
+
+    if (filters.league && product.leagues?.name !== filters.league) {
+      return false;
+    }
+
+    if (filters.nationality && product.nationalities?.name !== filters.nationality) {
+      return false;
+    }
+
+    if (filters.season && product.season !== filters.season) {
+      return false;
+    }
+
+    if (filters.specialEdition && !product.is_special_edition) {
+      return false;
+    }
+
+    if (filters.priceRange) {
+      const [min, max] = filters.priceRange;
+      if (product.price < min || product.price > max) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   if (loading) {
     return (
@@ -125,178 +154,123 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="gradient-dark border-b border-primary/20 shadow-elegant">
-        <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-3xl font-bold text-primary animate-glow-pulse">
-                ⚽ FutebolShirts
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-yellow-500 bg-clip-text text-transparent">
+                JerseyForge
               </h1>
-              <Badge className="badge-premium hidden sm:block">Premium Store</Badge>
             </div>
-
-            <div className="hidden md:flex items-center space-x-4 flex-1 max-w-md mx-8">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary" />
+            
+            <div className="flex-1 max-w-md mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Buscar camisas, times..."
+                  placeholder="Buscar camisas..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 border-primary/30 focus:border-primary bg-black/20 text-white placeholder:text-gray-300 transition-smooth"
+                  className="pl-10 bg-muted/50 border-0 focus-visible:ring-1"
                 />
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <Button variant="premium" size="sm" className="relative">
-                <ShoppingCart className="h-4 w-4" />
-                <Badge variant="default" className="ml-2 animate-glow-pulse">0</Badge>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {cartItems.length > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {cartItems.length}
+                  </Badge>
+                )}
               </Button>
               
-              {user ? (
-                <div className="flex items-center space-x-2">
-                  {userType === 'dono' && (
-                    <Button 
-                      onClick={() => navigate("/admin")} 
-                      variant="default" 
-                      size="sm"
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Admin</span>
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" className="text-primary hover:text-accent-foreground">
-                    <User className="h-4 w-4" />
-                    <span className="ml-2 hidden sm:inline text-white">{user.email}</span>
-                  </Button>
-                  <Button onClick={signOut} variant="outline" size="sm">
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button onClick={() => navigate("/auth")} size="sm">
-                  Entrar
+              {userType === "admin" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/admin")}
+                  className="hidden md:flex"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Admin
                 </Button>
               )}
-            </div>
-          </div>
-
-          {/* Mobile search */}
-          <div className="md:hidden mt-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary" />
-              <Input
-                placeholder="Buscar camisas, times..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 border-primary/30 focus:border-primary bg-black/20 text-white placeholder:text-gray-300 transition-smooth"
-              />
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => signOut()}
+                className="hidden md:flex"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+              
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <div className="flex flex-col space-y-4 mt-8">
+                    {userType === "admin" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate("/admin")}
+                        className="justify-start"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Admin
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => signOut()}
+                      className="justify-start"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sair
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters - Mobile */}
-          <div className="lg:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="default" className="w-full">
-                  <Menu className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <ProductFilters onFiltersChange={setFilters} />
-              </SheetContent>
-            </Sheet>
-          </div>
-
-          {/* Filters - Desktop */}
-          <div className="hidden lg:block">
-            <ProductFilters onFiltersChange={setFilters} />
-          </div>
-
-          {/* Products */}
-          <div className="lg:col-span-3">
-            <div className="mb-8 animate-fade-in">
-              <h2 className="text-3xl font-bold mb-3 gradient-primary bg-clip-text text-transparent">
-                Camisas de Futebol Premium
-              </h2>
-              <p className="text-muted-foreground text-lg">
-                Encontradas <span className="price-highlight">{products.length}</span> camisas
-              </p>
+      <main className="container mx-auto px-4 py-8">
+        <HeroSection onExploreClick={() => {}} />
+        
+        <div className="mt-12">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <aside className="lg:w-80">
+              <ModernProductFilters
+                onFiltersChange={handleFiltersChange}
+              />
+            </aside>
+            
+            <div className="flex-1">
+              <ModernProductGrid
+                products={filteredProducts}
+                loading={loading}
+                onProductClick={handleViewDetails}
+                onAddToCart={handleAddToCart}
+              />
             </div>
-
-            {loadingProducts ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-xl p-6 animate-pulse shadow-card">
-                    <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl mb-4"></div>
-                    <div className="space-y-3">
-                      <div className="h-5 bg-primary/20 rounded-lg w-3/4"></div>
-                      <div className="h-4 bg-accent/20 rounded-lg w-1/2"></div>
-                      <div className="h-6 bg-primary/30 rounded-lg w-1/3"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : products.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Nenhuma camisa encontrada com os filtros selecionados.
-                </p>
-                <Button onClick={() => setFilters({})}>
-                  Limpar filtros
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {products.map((product, index) => (
-                  <div
-                    key={product.id}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <ProductCard
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                      onViewDetails={handleViewDetails}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
+      </main>
 
-        {/* Product Notes Modal/Sidebar */}
-        {selectedProduct && user && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Notas do Produto</h3>
-                  <Button
-                    onClick={() => setSelectedProduct(null)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    ×
-                  </Button>
-                </div>
-              </div>
-              <div className="p-4">
-                <ProductNotes productId={selectedProduct} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {selectedProduct && (
+        <ProductNotes
+          productId={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </div>
   );
 };
