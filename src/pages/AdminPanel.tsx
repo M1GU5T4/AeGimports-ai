@@ -111,6 +111,19 @@ const AdminPanel = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [hiddenProducts, setHiddenProducts] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('hiddenProducts');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  // Sincronizar produtos ocultos com localStorage
+  useEffect(() => {
+    localStorage.setItem('hiddenProducts', JSON.stringify(Array.from(hiddenProducts)));
+    // Disparar evento customizado para sincronizar entre páginas
+    window.dispatchEvent(new CustomEvent('hiddenProductsChanged', {
+      detail: Array.from(hiddenProducts)
+    }));
+  }, [hiddenProducts]);
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
@@ -175,250 +188,6 @@ const AdminPanel = () => {
     }
   };
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description || "",
-      price: product.price.toString(),
-      promotional_price: product.promotional_price?.toString() || "",
-      team_name: product.team_name,
-      season: product.season || "",
-      league_id: product.league_id || "",
-      nationality_id: product.nationality_id || "",
-      is_special_edition: product.is_special_edition,
-      special_edition_notes: product.special_edition_notes || "",
-      image_url: product.image_url || "",
-      image_url_2: product.image_url_2 || "",
-      image_url_3: product.image_url_3 || "",
-      image_url_4: product.image_url_4 || "",
-      stock_quantity: product.stock_quantity.toString(),
-      sku: product.sku || "",
-      category: product.category || "",
-      subcategory: product.subcategory || "",
-      is_featured: product.is_featured,
-      is_new_arrival: product.is_new_arrival,
-      is_on_sale: product.is_on_sale,
-      seo_title: product.seo_title || "",
-      seo_description: product.seo_description || "",
-      seo_keywords: product.seo_keywords || "",
-      material: "",
-      care_instructions: "",
-      weight: "",
-      dimensions: ""
-    });
-    
-    // Automatically switch to edit tab
-    const editTab = document.querySelector('[value="add-product"]') as HTMLElement;
-    if (editTab) {
-      editTab.click();
-    }
-    
-    // Scroll to form after tab switch
-    setTimeout(() => {
-      const formElement = document.querySelector('[data-state="active"] form');
-      if (formElement) {
-        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 200);
-  };
-
-  const handleCancelEdit = () => {
-    const hasChanges = Object.keys(formData).some(key => {
-      if (!editingProduct) return false;
-      const formValue = formData[key as keyof ProductFormData];
-      const productValue = editingProduct[key as keyof Product];
-      return formValue !== (productValue?.toString() || "");
-    });
-
-    if (hasChanges) {
-      const confirmed = window.confirm("Você tem alterações não salvas. Deseja realmente cancelar?");
-      if (!confirmed) return;
-    }
-
-    setEditingProduct(null);
-    setFormData({
-      name: "",
-      description: "",
-      price: "",
-      promotional_price: "",
-      team_name: "",
-      season: "",
-      league_id: "",
-      nationality_id: "",
-      is_special_edition: false,
-      special_edition_notes: "",
-      image_url: "",
-      image_url_2: "",
-      image_url_3: "",
-      image_url_4: "",
-      stock_quantity: "",
-      sku: "",
-      category: "",
-      subcategory: "",
-      is_featured: false,
-      is_new_arrival: false,
-      is_on_sale: false,
-      seo_title: "",
-      seo_description: "",
-      seo_keywords: "",
-      material: "",
-      care_instructions: "",
-      weight: "",
-      dimensions: ""
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      // Gerar SKU automaticamente se não fornecido
-      const generateSKU = () => {
-        const timestamp = Date.now().toString();
-        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-        return `SKU-${timestamp}-${random}`;
-      };
-
-      const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        promotional_price: formData.promotional_price ? parseFloat(formData.promotional_price) : null,
-        team_name: formData.team_name,
-        season: formData.season,
-        league_id: formData.league_id || null,
-        nationality_id: formData.nationality_id || null,
-        is_special_edition: formData.is_special_edition,
-        special_edition_notes: formData.special_edition_notes,
-        image_url: formData.image_url,
-        image_url_2: formData.image_url_2,
-        image_url_3: formData.image_url_3,
-        image_url_4: formData.image_url_4,
-        stock_quantity: parseInt(formData.stock_quantity),
-        sku: formData.sku || generateSKU(),
-        category: formData.category,
-        subcategory: formData.subcategory,
-        is_featured: formData.is_featured,
-        is_new_arrival: formData.is_new_arrival,
-        is_on_sale: formData.is_on_sale,
-        seo_title: formData.seo_title,
-        seo_description: formData.seo_description,
-        seo_keywords: formData.seo_keywords,
-        active: true
-      };
-
-      let result;
-      if (editingProduct) {
-        result = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', editingProduct.id)
-          .select();
-      } else {
-        result = await supabase
-          .from('products')
-          .insert([productData])
-          .select();
-      }
-
-      if (result.error) throw result.error;
-
-      toast.success(editingProduct ? 'Produto atualizado com sucesso!' : 'Produto adicionado com sucesso!');
-      
-      // Reset form
-      setFormData({
-        name: "",
-        description: "",
-        price: "",
-        promotional_price: "",
-        team_name: "",
-        season: "",
-        league_id: "",
-        nationality_id: "",
-        is_special_edition: false,
-        special_edition_notes: "",
-        image_url: "",
-        image_url_2: "",
-        image_url_3: "",
-        image_url_4: "",
-        stock_quantity: "",
-        sku: "",
-        category: "",
-        subcategory: "",
-        is_featured: false,
-        is_new_arrival: false,
-        is_on_sale: false,
-        seo_title: "",
-        seo_description: "",
-        seo_keywords: "",
-        material: "",
-        care_instructions: "",
-        weight: "",
-        dimensions: ""
-      });
-      setEditingProduct(null);
-      
-      // Refresh products
-      fetchData();
-    } catch (error) {
-      console.error('Erro ao salvar produto:', error);
-      toast.error('Erro ao salvar produto');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const toggleProductStatus = async (product: Product) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({ active: !product.active })
-        .eq('id', product.id);
-
-      if (error) throw error;
-
-      toast.success(`Produto ${!product.active ? 'ativado' : 'desativado'} com sucesso!`);
-      fetchData();
-    } catch (error) {
-      console.error('Erro ao alterar status do produto:', error);
-      toast.error('Erro ao alterar status do produto');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!productToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productToDelete.id);
-
-      if (error) throw error;
-
-      toast.success('Produto excluído com sucesso!');
-      setDeleteDialogOpen(false);
-      setProductToDelete(null);
-      fetchData();
-    } catch (error) {
-      console.error('Erro ao excluir produto:', error);
-      toast.error('Erro ao excluir produto');
-    }
-  };
-
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.team_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesCategory = filterCategory === "all" || !filterCategory || product.category === filterCategory;
-    const matchesStatus = filterStatus === "all" || !filterStatus || product.active.toString() === filterStatus;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -445,813 +214,778 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100">
       {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-amber-600 via-yellow-600 to-orange-700 shadow-xl">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-400/30 text-amber-100 border-amber-400/30 backdrop-blur-sm transition-all duration-300"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Voltar
-              </Button>
-              <div>
-                <h1 className="text-4xl font-bold text-amber-100 mb-2">Painel Administrativo</h1>
-                <p className="text-amber-200 text-lg">Gerencie sua loja de camisas de futebol</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Quick Stats Cards */}
-              <div className="hidden md:flex gap-4">
-                <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/20 backdrop-blur-sm rounded-lg p-4 text-center min-w-[100px] border border-amber-400/30">
-                  <div className="text-2xl font-bold text-amber-100">{products.length}</div>
-                  <div className="text-amber-200 text-sm">Produtos</div>
-                </div>
-                <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/20 backdrop-blur-sm rounded-lg p-4 text-center min-w-[100px] border border-amber-400/30">
-                  <div className="text-2xl font-bold text-amber-100">{products.filter(p => p.active).length}</div>
-                  <div className="text-amber-200 text-sm">Ativos</div>
-                </div>
-                <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/20 backdrop-blur-sm rounded-lg p-4 text-center min-w-[100px] border border-amber-400/30">
-                  <div className="text-2xl font-bold text-amber-100">{products.filter(p => p.stock_quantity <= 5).length}</div>
-                  <div className="text-amber-200 text-sm">Baixo Estoque</div>
-                </div>
-              </div>
-            </div>
+      <div className="bg-gradient-to-r from-amber-600 via-yellow-600 to-orange-700 shadow-xl w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-400/30 text-amber-100 border-amber-400/30 backdrop-blur-sm transition-all duration-300"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-amber-100 mb-1 sm:mb-2">Painel Administrativo</h1>
+            <p className="text-amber-200 text-sm sm:text-base lg:text-lg">Gerencie sua loja de camisas de futebol</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-
-        <Tabs defaultValue="products" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl p-2">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <Tabs defaultValue={window.location.hash ? window.location.hash.replace('#','') : "products"} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl p-2 gap-1">
             <TabsTrigger 
               value="products" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800"
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800 text-xs sm:text-sm px-2 sm:px-3"
             >
-              <Package className="h-4 w-4" />
-              Produtos
+              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Produtos</span>
+              <span className="sm:hidden">Prod.</span>
             </TabsTrigger>
             <TabsTrigger 
               value="add-product" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800"
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800 text-xs sm:text-sm px-2 sm:px-3"
             >
-              <Plus className="h-4 w-4" />
-              {editingProduct ? `Editando: ${editingProduct.name.substring(0, 20)}...` : 'Adicionar Produto'}
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden lg:inline">Adicionar Produto</span>
+              <span className="lg:hidden">Adicionar</span>
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800"
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800 text-xs sm:text-sm px-2 sm:px-3"
             >
-              <Settings className="h-4 w-4" />
-              Configurações
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Configurações</span>
+              <span className="sm:hidden">Config.</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="clients" 
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800 text-xs sm:text-sm px-2 sm:px-3"
+            >
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Clientes</span>
+              <span className="sm:hidden">Client.</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="reports" 
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800 text-xs sm:text-sm px-2 sm:px-3"
+            >
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Relatórios</span>
+              <span className="sm:hidden">Relat.</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="export" 
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-lg transition-all duration-300 hover:bg-amber-50 text-amber-100 hover:text-amber-800 text-xs sm:text-sm px-2 sm:px-3"
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+              <span className="sm:hidden">Export.</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-8">
-            {/* Dashboard Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-gradient-to-br from-amber-500 to-yellow-600 text-black border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-black/80 text-sm font-medium">Total de Produtos</p>
-                      <p className="text-3xl font-bold">{products.length}</p>
-                    </div>
-                    <Package className="h-12 w-12 text-black/70" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-br from-amber-500 to-yellow-600 text-black border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-black/80 text-sm font-medium">Produtos Ativos</p>
-                      <p className="text-3xl font-bold">{products.filter(p => p.active).length}</p>
-                    </div>
-                    <TrendingUp className="h-12 w-12 text-black/70" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-br from-amber-500 to-yellow-600 text-black border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-black/80 text-sm font-medium">Baixo Estoque</p>
-                      <p className="text-3xl font-bold">{products.filter(p => p.stock_quantity <= 5).length}</p>
-                    </div>
-                    <BarChart3 className="h-12 w-12 text-black/70" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-br from-amber-500 to-yellow-600 text-black border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-black/80 text-sm font-medium">Em Destaque</p>
-                      <p className="text-3xl font-bold">{products.filter(p => p.is_featured).length}</p>
-                    </div>
-                    <Star className="h-12 w-12 text-black/70" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-lg border-b border-amber-200">
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">Lista de Produtos</CardTitle>
-                <CardDescription className="text-lg">
-                  Gerencie todos os produtos da sua loja com facilidade
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-amber-800">Lista de Produtos</CardTitle>
+                <CardDescription className="text-amber-600">
+                  Gerencie todos os produtos da sua loja
                 </CardDescription>
-                <div className="flex flex-col md:flex-row gap-4 mt-6">
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Filtros e Busca */}
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-500 h-4 w-4" />
                       <Input
-                        placeholder="Buscar produtos, times ou SKU..."
+                        placeholder="Buscar produtos..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white/80 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                        className="pl-10 border-amber-200 focus:border-amber-400"
                       />
                     </div>
                   </div>
                   <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="w-full md:w-48 bg-white/80 border-gray-200 focus:border-blue-500 rounded-lg">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filtrar por categoria" />
+                    <SelectTrigger className="w-full sm:w-48 border-amber-200">
+                      <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as categorias</SelectItem>
-                      {categories
-                        .filter(category => category.name && category.name.trim() !== '')
-                        .map((category) => (
-                          <SelectItem key={category.id} value={category.name}>
-                            {category.name}
-                          </SelectItem>
-                        ))
-                      }
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full md:w-32 bg-white/80 border-gray-200 focus:border-blue-500 rounded-lg">
+                    <SelectTrigger className="w-full sm:w-48 border-amber-200">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="true">Ativo</SelectItem>
-                      <SelectItem value="false">Inativo</SelectItem>
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      <SelectItem value="active">Ativo</SelectItem>
+                      <SelectItem value="inactive">Inativo</SelectItem>
+                      <SelectItem value="featured">Em destaque</SelectItem>
+                      <SelectItem value="sale">Em promoção</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {filteredProducts.length === 0 ? (
-                  <div className="flex items-center justify-center py-16">
-                    <div className="text-center">
-                      <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-xl font-medium text-gray-600 mb-2">Nenhum produto encontrado</p>
-                      <p className="text-gray-400">Tente ajustar os filtros ou adicione novos produtos</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-gray-50 to-blue-50 border-b-2 border-blue-100">
-                          <TableHead className="font-bold text-gray-700">Imagem</TableHead>
-                          <TableHead className="font-bold text-gray-700">Nome</TableHead>
-                          <TableHead className="font-bold text-gray-700">SKU</TableHead>
-                          <TableHead className="font-bold text-gray-700">Time</TableHead>
-                          <TableHead className="font-bold text-gray-700">Preço</TableHead>
-                          <TableHead className="font-bold text-gray-700">Estoque</TableHead>
-                          <TableHead className="font-bold text-gray-700">Status</TableHead>
-                          <TableHead className="font-bold text-gray-700">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredProducts.map((product, index) => (
-                          <TableRow 
-                            key={product.id} 
-                            className={`hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100 ${
-                              editingProduct?.id === product.id 
-                                ? 'bg-blue-100/50 border-blue-200' 
-                                : index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
-                            }`}
-                          >
-                            <TableCell className="py-4">
-                              {product.image_url ? (
-                                <div className="relative group">
-                                  <img
-                                    src={product.image_url}
+
+                {/* Estatísticas */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-100 text-sm">Total de Produtos</p>
+                          <p className="text-2xl font-bold">{products.length}</p>
+                        </div>
+                        <Package className="h-8 w-8 text-blue-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-green-100 text-sm">Produtos Ativos</p>
+                          <p className="text-2xl font-bold">{products.filter(p => p.active).length}</p>
+                        </div>
+                        <Eye className="h-8 w-8 text-green-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-yellow-100 text-sm">Em Destaque</p>
+                          <p className="text-2xl font-bold">{products.filter(p => p.is_featured).length}</p>
+                        </div>
+                        <Star className="h-8 w-8 text-yellow-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-red-100 text-sm">Em Promoção</p>
+                          <p className="text-2xl font-bold">{products.filter(p => p.is_on_sale).length}</p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-red-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-r from-gray-500 to-gray-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-100 text-sm">Produtos Ocultos</p>
+                          <p className="text-2xl font-bold">{hiddenProducts.size}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <EyeOff className="h-8 w-8 text-gray-200" />
+                          {hiddenProducts.size > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setHiddenProducts(new Set());
+                                toast.success('Todos os produtos foram exibidos novamente!');
+                              }}
+                              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                            >
+                              Mostrar Todos
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tabela de Produtos */}
+                <div className="border border-amber-200 rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-amber-50">
+                        <TableHead className="text-amber-800 font-semibold">Imagem</TableHead>
+                        <TableHead className="text-amber-800 font-semibold">Nome</TableHead>
+                        <TableHead className="text-amber-800 font-semibold">Time</TableHead>
+                        <TableHead className="text-amber-800 font-semibold">Preço</TableHead>
+                        <TableHead className="text-amber-800 font-semibold">Estoque</TableHead>
+                        <TableHead className="text-amber-800 font-semibold">Status</TableHead>
+                        <TableHead className="text-amber-800 font-semibold">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {products
+                        .filter(product => {
+                          const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                              product.team_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                              (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+                          
+                          const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
+                          
+                          const matchesStatus = filterStatus === 'all' ||
+                                              (filterStatus === 'active' && product.active) ||
+                                              (filterStatus === 'inactive' && !product.active) ||
+                                              (filterStatus === 'featured' && product.is_featured) ||
+                                              (filterStatus === 'sale' && product.is_on_sale);
+                          
+                          const isNotHidden = !hiddenProducts.has(product.id);
+                          
+                          return matchesSearch && matchesCategory && matchesStatus && isNotHidden;
+                        })
+                        .map((product) => (
+                          <TableRow key={product.id} className="hover:bg-amber-50/50">
+                            <TableCell>
+                              <div className="w-16 h-16 bg-amber-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                {product.image_url ? (
+                                  <img 
+                                    src={product.image_url} 
                                     alt={product.name}
-                                    className="w-16 h-16 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-200"
+                                    className="w-full h-full object-cover"
                                   />
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-lg transition-all duration-200"></div>
-                                </div>
-                              ) : (
-                                <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex items-center justify-center shadow-md">
-                                  <Package className="h-8 w-8 text-gray-400" />
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="font-semibold text-gray-800 py-4">
-                              <div className="flex items-center gap-2">
-                                <div>
-                                  <p className="font-bold">{product.name}</p>
-                                  {editingProduct?.id === product.id && (
-                                    <Badge variant="secondary" className="text-xs mt-1">✏️ Editando</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{product.sku}</span>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <span className="font-medium text-blue-600">{product.team_name}</span>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <div className="flex flex-col">
-                                <span className={product.promotional_price ? 'line-through text-gray-500 text-sm' : 'font-bold text-lg text-green-600'}>
-                                  R$ {product.price.toFixed(2)}
-                                </span>
-                                {product.promotional_price && (
-                                  <span className="text-red-600 font-bold text-lg">
-                                    R$ {product.promotional_price.toFixed(2)}
-                                  </span>
+                                ) : (
+                                  <Package2 className="h-8 w-8 text-amber-400" />
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="py-4">
-                              <span className={`px-3 py-1 rounded-full text-sm font-bold shadow-md ${
-                                product.stock_quantity <= 5 
-                                  ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800' 
-                                  : product.stock_quantity <= 10
-                                  ? 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800'
-                                  : 'bg-gradient-to-r from-green-100 to-green-200 text-green-800'
-                              }`}>
-                                {product.stock_quantity} un.
-                              </span>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <div className="flex flex-wrap gap-1">
-                                <Badge variant={product.active ? 'default' : 'secondary'} className="shadow-sm">
-                                  {product.active ? '✓ Ativo' : '✗ Inativo'}
-                                </Badge>
-                                {product.is_featured && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">⭐ Destaque</Badge>}
-                                {product.is_new_arrival && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">🆕 Novo</Badge>}
-                                {product.is_on_sale && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">🔥 Promoção</Badge>}
+                            <TableCell>
+                              <div>
+                                <p className="font-medium text-amber-900">{product.name}</p>
+                                {product.sku && (
+                                  <p className="text-sm text-amber-600">SKU: {product.sku}</p>
+                                )}
                               </div>
                             </TableCell>
-                            <TableCell className="py-4">
+                            <TableCell className="text-amber-800">{product.team_name}</TableCell>
+                            <TableCell>
+                              <div>
+                                {product.promotional_price ? (
+                                  <>
+                                    <p className="font-bold text-green-600">R$ {product.promotional_price.toFixed(2)}</p>
+                                    <p className="text-sm text-gray-500 line-through">R$ {product.price.toFixed(2)}</p>
+                                  </>
+                                ) : (
+                                  <p className="font-bold text-amber-800">R$ {product.price.toFixed(2)}</p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={product.stock_quantity > 10 ? "default" : product.stock_quantity > 0 ? "secondary" : "destructive"}
+                                className={product.stock_quantity > 10 ? "bg-green-100 text-green-800" : product.stock_quantity > 0 ? "bg-yellow-100 text-yellow-800" : ""}
+                              >
+                                {product.stock_quantity} unidades
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                <Badge variant={product.active ? "default" : "secondary"} className={product.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                                  {product.active ? "Ativo" : "Inativo"}
+                                </Badge>
+                                {product.is_featured && (
+                                  <Badge className="bg-yellow-100 text-yellow-800">
+                                    Destaque
+                                  </Badge>
+                                )}
+                                {product.is_on_sale && (
+                                  <Badge className="bg-red-100 text-red-800">
+                                    Promoção
+                                  </Badge>
+                                )}
+                                {product.is_new_arrival && (
+                                  <Badge className="bg-blue-100 text-blue-800">
+                                    Novo
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <div className="flex gap-2">
                                 <Button
-                                  variant="outline"
                                   size="sm"
-                                  onClick={() => handleEdit(product)}
-                                  className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800 transition-all duration-200 hover:shadow-md"
-                                  title="Editar produto"
+                                  variant="outline"
+                                  onClick={() => setEditingProduct(product)}
+                                  className="border-amber-200 text-amber-700 hover:bg-amber-50"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
+                                  size="sm"
                                   variant="outline"
-                                  size="sm"
-                                  onClick={() => toggleProductStatus(product)}
-                                  className={`transition-all duration-200 hover:shadow-md ${
-                                    product.active 
-                                      ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800'
-                                      : 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800'
-                                  }`}
-                                  title={product.active ? 'Desativar produto' : 'Ativar produto'}
-                                >
-                                  {product.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
                                   onClick={() => {
                                     setProductToDelete(product);
                                     setDeleteDialogOpen(true);
                                   }}
-                                  className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800 hover:shadow-md transition-all duration-200"
-                                  title="Excluir produto"
+                                  className="border-red-200 text-red-700 hover:bg-red-50"
                                 >
                                   <Trash2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const newHiddenProducts = new Set(hiddenProducts);
+                                    if (hiddenProducts.has(product.id)) {
+                                      newHiddenProducts.delete(product.id);
+                                      toast.success('Produto exibido novamente!');
+                                    } else {
+                                      newHiddenProducts.add(product.id);
+                                      toast.success('Produto ocultado da lista!');
+                                    }
+                                    setHiddenProducts(newHiddenProducts);
+                                  }}
+                                  className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                                  title="Ocultar/Mostrar produto"
+                                >
+                                  <EyeOff className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
                           </TableRow>
                         ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                    </TableBody>
+                  </Table>
+                  
+                  {products.length === 0 && (
+                    <div className="p-8 text-center text-amber-600">
+                      <Package className="h-12 w-12 mx-auto mb-4 text-amber-400" />
+                      <p className="text-lg font-medium">Nenhum produto encontrado</p>
+                      <p className="text-sm">Adicione produtos para começar a gerenciar sua loja</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
+
+            {/* Seção de Produtos Ocultos */}
+            {hiddenProducts.size > 0 && (
+              <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-amber-800 flex items-center gap-2">
+                    <EyeOff className="h-5 w-5" />
+                    Produtos Ocultos ({hiddenProducts.size})
+                  </CardTitle>
+                  <CardDescription className="text-amber-600">
+                    Produtos que foram ocultados da visualização principal
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {products
+                      .filter(product => hiddenProducts.has(product.id))
+                      .map((product) => (
+                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center overflow-hidden">
+                              {product.image_url ? (
+                                <img 
+                                  src={product.image_url} 
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package2 className="h-6 w-6 text-amber-400" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{product.name}</p>
+                              <p className="text-sm text-gray-600">{product.team_name}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const newHiddenProducts = new Set(hiddenProducts);
+                              newHiddenProducts.delete(product.id);
+                              setHiddenProducts(newHiddenProducts);
+                              toast.success('Produto mostrado na interface');
+                            }}
+                            className="border-green-200 text-green-700 hover:bg-green-50"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Mostrar
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="add-product" className="space-y-8">
             <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-lg border-b border-amber-200">
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                  {editingProduct ? `✏️ Editando: ${editingProduct.name}` : '➕ Adicionar Novo Produto'}
-                </CardTitle>
-                <CardDescription className="text-lg">
-                  {editingProduct ? 'Modifique as informações do produto selecionado' : 'Preencha as informações para criar um novo produto'}
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-amber-800">Adicionar Produto</CardTitle>
+                <CardDescription className="text-amber-600">
+                  Adicione um novo produto ao catálogo
                 </CardDescription>
-                {editingProduct && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Edit className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-blue-800 text-lg">Modo de Edição Ativo</p>
-                          <p className="text-sm text-blue-600">Produto: {editingProduct.name} (ID: {editingProduct.id})</p>
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant={editingProduct.active ? 'default' : 'secondary'} className="shadow-sm">
-                              {editingProduct.active ? '✓ Ativo' : '✗ Inativo'}
-                            </Badge>
-                            {editingProduct.is_featured && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">⭐ Destaque</Badge>}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCancelEdit}
-                          className="bg-white hover:bg-gray-50 border-gray-300 shadow-md hover:shadow-lg transition-all duration-200"
-                        >
-                          ❌ Cancelar Edição
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            setProductToDelete(editingProduct);
-                            setDeleteDialogOpen(true);
-                          }}
-                          className="bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg transition-all duration-200"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          🗑️ Excluir Produto
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Informações Básicas */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-                    <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
-                      <Package className="h-5 w-5" />
-                      Informações Básicas
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Nome do Produto */}
-                      <div className="space-y-3">
-                        <Label htmlFor="name" className="text-sm font-semibold text-gray-700">Nome do Produto *</Label>
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="Ex: Camisa do Flamengo 2024"
-                          required
-                          className="bg-white/80 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm"
-                        />
-                      </div>
-
-                      {/* SKU */}
-                      <div className="space-y-3">
-                        <Label htmlFor="sku" className="text-sm font-semibold text-gray-700">SKU</Label>
-                        <Input
-                          id="sku"
-                          value={formData.sku}
-                          onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                          placeholder="Ex: FLA-2024-HOME (auto-gerado se vazio)"
-                          className="bg-white/80 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm font-mono"
-                        />
-                      </div>
-
-                      {/* Time */}
-                      <div className="space-y-3">
-                        <Label htmlFor="team_name" className="text-sm font-semibold text-gray-700">Time *</Label>
-                        <Input
-                          id="team_name"
-                          value={formData.team_name}
-                          onChange={(e) => setFormData({ ...formData, team_name: e.target.value })}
-                          placeholder="Ex: Flamengo"
-                          required
-                          className="bg-white/80 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm"
-                        />
-                      </div>
-
-                      {/* Categoria */}
-                      <div className="space-y-3">
-                        <Label htmlFor="category" className="text-sm font-semibold text-gray-700">Categoria</Label>
-                        <Select value={formData.category || undefined} onValueChange={(value) => setFormData({ ...formData, category: value || "" })}>
-                          <SelectTrigger className="bg-white/80 border-gray-300 focus:border-blue-500 rounded-lg shadow-sm">
-                            <SelectValue placeholder="Selecione uma categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories
-                              .filter(category => category.name && category.name.trim() !== '')
-                              .map((category) => (
-                                <SelectItem key={category.id} value={category.name}>
-                                  {category.name}
-                                </SelectItem>
-                              ))
-                            }
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Temporada */}
-                      <div className="space-y-3">
-                        <Label htmlFor="season" className="text-sm font-semibold text-gray-700">Temporada</Label>
-                        <Input
-                          id="season"
-                          value={formData.season}
-                          onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                          placeholder="Ex: 2023/24"
-                          className="bg-white/80 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Preços e Estoque */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-                    <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Preços e Estoque
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Preço */}
-                      <div className="space-y-3">
-                        <Label htmlFor="price" className="text-sm font-semibold text-gray-700">Preço (R$) *</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-bold">R$</span>
-                          <Input
-                            id="price"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                            placeholder="89.90"
-                            required
-                            className="pl-10 bg-white/80 border-gray-300 focus:border-green-500 focus:ring-green-500 rounded-lg shadow-sm"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Preço Promocional */}
-                      <div className="space-y-3">
-                        <Label htmlFor="promotional_price" className="text-sm font-semibold text-gray-700">Preço Promocional (R$)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-bold">R$</span>
-                          <Input
-                            id="promotional_price"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={formData.promotional_price}
-                            onChange={(e) => setFormData({ ...formData, promotional_price: e.target.value })}
-                            placeholder="69.90"
-                            className="pl-10 bg-white/80 border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-lg shadow-sm"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Quantidade em Estoque */}
-                      <div className="space-y-3">
-                        <Label htmlFor="stock_quantity" className="text-sm font-semibold text-gray-700">Estoque *</Label>
-                        <Input
-                          id="stock_quantity"
-                          type="number"
-                          min="0"
-                          value={formData.stock_quantity}
-                          onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                          placeholder="50"
-                          required
-                          className="bg-white/80 border-gray-300 focus:border-green-500 focus:ring-green-500 rounded-lg shadow-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status e Configurações */}
-                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-200">
-                    <h3 className="text-lg font-bold text-indigo-800 mb-4 flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      Status e Configurações
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white/80 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <div className="flex items-center space-x-3">
-                          <Switch
-                            id="active"
-                            checked={editingProduct ? editingProduct.active : true}
-                            onCheckedChange={(checked) => {
-                              if (editingProduct) {
-                                toggleProductStatus(editingProduct);
-                              }
-                            }}
-                            className="data-[state=checked]:bg-green-500"
-                          />
-                          <Label htmlFor="active" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                            ✅ Produto {editingProduct?.active ? 'Ativo' : 'Inativo'}
-                          </Label>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2 ml-6">Produto visível na loja</p>
-                      </div>
-                      
-                      <div className="bg-white/80 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <div className="flex items-center space-x-3">
-                          <Switch
-                            id="is_featured"
-                            checked={formData.is_featured}
-                            onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-                            className="data-[state=checked]:bg-yellow-500"
-                          />
-                          <Label htmlFor="is_featured" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                            ⭐ Produto em Destaque
-                          </Label>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2 ml-6">Aparece na página inicial</p>
-                      </div>
-                      
-                      <div className="bg-white/80 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <div className="flex items-center space-x-3">
-                          <Switch
-                            id="is_new_arrival"
-                            checked={formData.is_new_arrival}
-                            onCheckedChange={(checked) => setFormData({ ...formData, is_new_arrival: checked })}
-                            className="data-[state=checked]:bg-blue-500"
-                          />
-                          <Label htmlFor="is_new_arrival" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                            🆕 Novo Lançamento
-                          </Label>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2 ml-6">Marca como novidade</p>
-                      </div>
-                      
-                      <div className="bg-white/80 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <div className="flex items-center space-x-3">
-                          <Switch
-                            id="is_on_sale"
-                            checked={formData.is_on_sale}
-                            onCheckedChange={(checked) => setFormData({ ...formData, is_on_sale: checked })}
-                            className="data-[state=checked]:bg-red-500"
-                          />
-                          <Label htmlFor="is_on_sale" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                            🔥 Em Promoção
-                          </Label>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2 ml-6">Destaca preço promocional</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Imagens do Produto */}
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
-                    <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center gap-2">
-                      <ShoppingCart className="h-5 w-5" />
-                      Imagens do Produto
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-gray-700">Imagem Principal *</Label>
-                        <div className="bg-white/80 p-4 rounded-lg border border-gray-300 shadow-sm">
-                          <ImageUpload
-                            onImageUploaded={(url) => setFormData({ ...formData, image_url: url })}
-                            currentImageUrl={formData.image_url}
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-gray-700">Imagem Secundária</Label>
-                        <div className="bg-white/80 p-4 rounded-lg border border-gray-300 shadow-sm">
-                          <ImageUpload
-                            onImageUploaded={(url) => setFormData({ ...formData, image_url_2: url })}
-                            currentImageUrl={formData.image_url_2}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Descrição */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
-                    <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Descrição do Produto
-                    </h3>
-                    <div className="space-y-3">
-                      <Label htmlFor="description" className="text-sm font-semibold text-gray-700">Descrição Detalhada</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Descreva as características, materiais, tecnologias e diferenciais do produto..."
-                        rows={5}
-                        className="bg-white/80 border-gray-300 focus:border-purple-500 focus:ring-purple-500 rounded-lg shadow-sm resize-none"
-                      />
-                      <p className="text-xs text-gray-500">💡 Dica: Uma boa descrição ajuda nas vendas e no SEO</p>
-                    </div>
-                  </div>
-
-                  {/* Liga e Nacionalidade */}
-                  <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-xl border border-teal-200">
-                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2">
-                      <Globe className="h-5 w-5" />
-                      Liga e Nacionalidade
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label htmlFor="league_id" className="text-sm font-semibold text-gray-700">Liga</Label>
-                        <Select value={formData.league_id} onValueChange={(value) => setFormData({ ...formData, league_id: value })}>
-                          <SelectTrigger className="bg-white/80 border-gray-300 focus:border-teal-500 rounded-lg shadow-sm">
-                            <SelectValue placeholder="Ex: Brasileirão, Premier League" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {leagues
-                              .filter(league => league.id && league.name && league.name.trim() !== '')
-                              .map((league) => (
-                                <SelectItem key={league.id} value={league.id}>
-                                  {league.name} ({league.country})
-                                </SelectItem>
-                              ))
-                            }
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-3">
-                        <Label htmlFor="nationality_id" className="text-sm font-semibold text-gray-700">Nacionalidade</Label>
-                        <Select value={formData.nationality_id} onValueChange={(value) => setFormData({ ...formData, nationality_id: value })}>
-                          <SelectTrigger className="bg-white/80 border-gray-300 focus:border-teal-500 rounded-lg shadow-sm">
-                            <SelectValue placeholder="Ex: Brasil, Inglaterra" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nationalities
-                              .filter(nationality => nationality.id && nationality.name && nationality.name.trim() !== '')
-                              .map((nationality) => (
-                                <SelectItem key={nationality.id} value={nationality.id}>
-                                  {nationality.name}
-                                </SelectItem>
-                              ))
-                            }
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Edição Especial */}
-                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-6 rounded-xl border border-amber-200">
-                    <h3 className="text-lg font-bold text-amber-800 mb-4 flex items-center gap-2">
-                      <Star className="h-5 w-5" />
-                      Edição Especial
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="bg-white/80 p-4 rounded-lg border border-gray-200 shadow-sm">
-                        <div className="flex items-center space-x-3">
-                          <Switch
-                            id="is_special_edition"
-                            checked={formData.is_special_edition}
-                            onCheckedChange={(checked) => setFormData({ ...formData, is_special_edition: checked })}
-                            className="data-[state=checked]:bg-amber-500"
-                          />
-                          <Label htmlFor="is_special_edition" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                            ⭐ Produto de Edição Especial
-                          </Label>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2 ml-6">Marca como item exclusivo ou limitado</p>
-                      </div>
-
-                      {formData.is_special_edition && (
-                        <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                          <Label htmlFor="special_edition_notes" className="text-sm font-semibold text-gray-700">Notas da Edição Especial</Label>
-                          <Textarea
-                            id="special_edition_notes"
-                            value={formData.special_edition_notes}
-                            onChange={(e) => setFormData({ ...formData, special_edition_notes: e.target.value })}
-                            placeholder="Ex: Edição limitada comemorativa dos 125 anos do clube, apenas 1000 unidades produzidas..."
-                            rows={4}
-                            className="bg-white/80 border-gray-300 focus:border-amber-500 focus:ring-amber-500 rounded-lg shadow-sm resize-none"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Botões de Ação */}
-                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-6 rounded-xl border border-gray-200">
-                    <div className="flex gap-4">
-                      <Button 
-                        type="submit" 
-                        disabled={submitting} 
-                        className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                      >
-                        {submitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {editingProduct ? 'Atualizando...' : 'Adicionando...'}
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-center space-x-2">
-                            {editingProduct ? (
-                              <>
-                                <Edit className="h-4 w-4" />
-                                <span>Salvar Alterações</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="h-4 w-4" />
-                                <span>Adicionar Produto</span>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </Button>
-                      {editingProduct && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleCancelEdit}
-                          className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
-                        >
-                          <div className="flex items-center justify-center space-x-2">
-                            <ArrowLeft className="h-4 w-4" />
-                            <span>Cancelar Edição</span>
-                          </div>
-                        </Button>
-                      )}
-                    </div>
-                    <div className="mt-4 text-center">
-                      <p className="text-xs text-gray-500">
-                        💡 {editingProduct ? 'Editando produto existente' : 'Criando novo produto'} - Verifique todos os campos antes de salvar
-                      </p>
-                    </div>
-                  </div>
-                </form>
+              <CardContent>
+                <p className="text-amber-700">Formulário de produtos em desenvolvimento...</p>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
+          <TabsContent value="settings" className="space-y-8">
+            <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
               <CardHeader>
-                <CardTitle>Configurações do Sistema</CardTitle>
-                <CardDescription>
-                  Configurações gerais da loja
+                <CardTitle className="text-2xl font-bold text-amber-800">Configurações</CardTitle>
+                <CardDescription className="text-amber-600">
+                  Configure as opções da sua loja
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Funcionalidades de configuração serão implementadas em breve.
-                  </p>
-                </div>
+                <p className="text-amber-700">Funcionalidades de configuração em desenvolvimento...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="clients" className="space-y-8">
+            <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-amber-800">Clientes</CardTitle>
+                <CardDescription className="text-amber-600">
+                  Gerencie os clientes e seu relacionamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-amber-700">Área de clientes em desenvolvimento...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-8">
+            <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-amber-800">Relatórios e Vendas</CardTitle>
+                <CardDescription className="text-amber-600">
+                  Visualize insights e desempenho da loja
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-amber-700">Relatórios em desenvolvimento...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-8">
+            <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-amber-800">Exportar Dados</CardTitle>
+                <CardDescription className="text-amber-600">
+                  Exporte seus dados para análises externas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-amber-700">Exportação em desenvolvimento...</p>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
 
-      {/* Dialog de Confirmação de Exclusão */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Exclusão</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir o produto "{productToDelete?.name}"?
-              Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Dialog de Exclusão */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja excluir o produto "{productToDelete?.name}"? Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={async () => {
+                  if (!productToDelete) return;
+                  
+                  try {
+                    const { error } = await supabase
+                      .from('products')
+                      .delete()
+                      .eq('id', productToDelete.id);
+                    
+                    if (error) throw error;
+                    
+                    await fetchData();
+                    toast.success('Produto excluído com sucesso!');
+                    setDeleteDialogOpen(false);
+                    setProductToDelete(null);
+                  } catch (error) {
+                    console.error('Erro ao excluir produto:', error);
+                    toast.error('Erro ao excluir produto');
+                  }
+                }}
+              >
+                Excluir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de Edição */}
+        <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Produto</DialogTitle>
+              <DialogDescription>
+                Edite as informações do produto
+              </DialogDescription>
+            </DialogHeader>
+            
+            {editingProduct && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Informações Básicas */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-name">Nome do Produto</Label>
+                    <Input
+                      id="edit-name"
+                      value={editingProduct.name}
+                      onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                      className="border-amber-200"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-team">Nome do Time</Label>
+                    <Input
+                      id="edit-team"
+                      value={editingProduct.team_name}
+                      onChange={(e) => setEditingProduct({...editingProduct, team_name: e.target.value})}
+                      className="border-amber-200"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="edit-price">Preço (R$)</Label>
+                      <Input
+                        id="edit-price"
+                        type="number"
+                        step="0.01"
+                        value={editingProduct.price}
+                        onChange={(e) => setEditingProduct({...editingProduct, price: parseFloat(e.target.value) || 0})}
+                        className="border-amber-200"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-promo-price">Preço Promocional (R$)</Label>
+                      <Input
+                        id="edit-promo-price"
+                        type="number"
+                        step="0.01"
+                        value={editingProduct.promotional_price || ''}
+                        onChange={(e) => setEditingProduct({...editingProduct, promotional_price: parseFloat(e.target.value) || undefined})}
+                        className="border-amber-200"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="edit-stock">Estoque</Label>
+                      <Input
+                        id="edit-stock"
+                        type="number"
+                        value={editingProduct.stock_quantity}
+                        onChange={(e) => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value) || 0})}
+                        className="border-amber-200"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-sku">SKU</Label>
+                      <Input
+                        id="edit-sku"
+                        value={editingProduct.sku || ''}
+                        onChange={(e) => setEditingProduct({...editingProduct, sku: e.target.value})}
+                        className="border-amber-200"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-description">Descrição</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editingProduct.description || ''}
+                      onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
+                      className="border-amber-200"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                
+                {/* Configurações e Status */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-category">Categoria</Label>
+                    <Select 
+                      value={editingProduct.category || ''} 
+                      onValueChange={(value) => setEditingProduct({...editingProduct, category: value})}
+                    >
+                      <SelectTrigger className="border-amber-200">
+                        <SelectValue placeholder="Selecione uma categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-season">Temporada</Label>
+                    <Input
+                      id="edit-season"
+                      value={editingProduct.season || ''}
+                      onChange={(e) => setEditingProduct({...editingProduct, season: e.target.value})}
+                      className="border-amber-200"
+                      placeholder="Ex: 2023/24"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-image">URL da Imagem</Label>
+                    <Input
+                      id="edit-image"
+                      value={editingProduct.image_url || ''}
+                      onChange={(e) => setEditingProduct({...editingProduct, image_url: e.target.value})}
+                      className="border-amber-200"
+                      placeholder="https://..."
+                    />
+                  </div>
+                  
+                  {/* Switches */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-active">Produto Ativo</Label>
+                      <Switch
+                        id="edit-active"
+                        checked={editingProduct.active}
+                        onCheckedChange={(checked) => setEditingProduct({...editingProduct, active: checked})}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-featured">Produto em Destaque</Label>
+                      <Switch
+                        id="edit-featured"
+                        checked={editingProduct.is_featured}
+                        onCheckedChange={(checked) => setEditingProduct({...editingProduct, is_featured: checked})}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-sale">Em Promoção</Label>
+                      <Switch
+                        id="edit-sale"
+                        checked={editingProduct.is_on_sale}
+                        onCheckedChange={(checked) => setEditingProduct({...editingProduct, is_on_sale: checked})}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-new">Novo Produto</Label>
+                      <Switch
+                        id="edit-new"
+                        checked={editingProduct.is_new_arrival}
+                        onCheckedChange={(checked) => setEditingProduct({...editingProduct, is_new_arrival: checked})}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-special">Edição Especial</Label>
+                      <Switch
+                        id="edit-special"
+                        checked={editingProduct.is_special_edition}
+                        onCheckedChange={(checked) => setEditingProduct({...editingProduct, is_special_edition: checked})}
+                      />
+                    </div>
+                  </div>
+                  
+                  {editingProduct.is_special_edition && (
+                    <div>
+                      <Label htmlFor="edit-special-notes">Notas da Edição Especial</Label>
+                      <Textarea
+                        id="edit-special-notes"
+                        value={editingProduct.special_edition_notes || ''}
+                        onChange={(e) => setEditingProduct({...editingProduct, special_edition_notes: e.target.value})}
+                        className="border-amber-200"
+                        rows={2}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingProduct(null)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={async () => {
+                  if (!editingProduct) return;
+                  
+                  try {
+                    const { error } = await supabase
+                      .from('products')
+                      .update({
+                        name: editingProduct.name,
+                        team_name: editingProduct.team_name,
+                        price: editingProduct.price,
+                        promotional_price: editingProduct.promotional_price,
+                        stock_quantity: editingProduct.stock_quantity,
+                        sku: editingProduct.sku,
+                        description: editingProduct.description,
+                        category: editingProduct.category,
+                        season: editingProduct.season,
+                        image_url: editingProduct.image_url,
+                        active: editingProduct.active,
+                        is_featured: editingProduct.is_featured,
+                        is_on_sale: editingProduct.is_on_sale,
+                        is_new_arrival: editingProduct.is_new_arrival,
+                        is_special_edition: editingProduct.is_special_edition,
+                        special_edition_notes: editingProduct.special_edition_notes,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', editingProduct.id);
+                    
+                    if (error) throw error;
+                    
+                    await fetchData();
+                    toast.success('Produto atualizado com sucesso!');
+                    setEditingProduct(null);
+                  } catch (error) {
+                    console.error('Erro ao atualizar produto:', error);
+                    toast.error('Erro ao atualizar produto');
+                  }
+                }}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Eye, Star, Zap } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Heart, ShoppingCart, Eye, Star, Zap, MapPin, Calendar, Trophy, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -24,8 +26,11 @@ interface ModernProductCardProps {
   onAddToCart?: (productId: string) => void;
   onViewDetails?: (productId: string) => void;
   onToggleFavorite?: (productId: string) => void;
+  onClick?: () => void;
   isFavorite?: boolean;
   className?: string;
+  style?: React.CSSProperties;
+  viewMode?: "grid" | "list";
 }
 
 export const ModernProductCard = ({ 
@@ -33,11 +38,15 @@ export const ModernProductCard = ({
   onAddToCart, 
   onViewDetails, 
   onToggleFavorite,
+  onClick,
   isFavorite = false,
-  className 
+  className,
+  style,
+  viewMode = "grid"
 }: ModernProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <Card 
@@ -47,8 +56,10 @@ export const ModernProductCard = ({
         "hover:-translate-y-2 hover:scale-[1.02]",
         className
       )}
+      style={style}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
     >
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -98,7 +109,10 @@ export const ModernProductCard = ({
               size="sm"
               variant="secondary"
               className="bg-white/90 hover:bg-white text-black border-0 shadow-lg hover:scale-110 transition-all duration-200"
-              onClick={() => onViewDetails?.(product.id)}
+              onClick={() => {
+                setIsDialogOpen(true);
+                onViewDetails?.(product.id);
+              }}
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -212,6 +226,153 @@ export const ModernProductCard = ({
         "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500",
         "bg-gradient-to-r from-primary/20 via-transparent to-accent/20 blur-xl -z-10"
       )} />
+
+      {/* Product Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-primary">
+              {product.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Image Section */}
+            <div className="space-y-4">
+              <div className="aspect-square overflow-hidden rounded-lg border">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <div className="text-6xl text-muted-foreground">⚽</div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                {product.is_special_edition && (
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Edição Especial
+                  </Badge>
+                )}
+                {product.leagues && (
+                  <Badge variant="secondary">
+                    <Trophy className="w-3 h-3 mr-1" />
+                    {product.leagues.name}
+                  </Badge>
+                )}
+                {product.season && (
+                  <Badge variant="outline">
+                    <Calendar className="w-3 h-3 mr-1" />
+                    {product.season}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Details Section */}
+            <div className="space-y-6">
+              {/* Price */}
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  R$ {product.price.toFixed(2)}
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={cn(
+                        "w-4 h-4",
+                        i < 4 ? "text-yellow-400 fill-current" : "text-gray-300"
+                      )} 
+                    />
+                  ))}
+                  <span className="text-sm text-muted-foreground ml-2">(4.0)</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Product Info */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-semibold">Time:</span>
+                  <span>{product.team_name}</span>
+                </div>
+
+                {product.leagues && (
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-semibold">Liga:</span>
+                    <span>{product.leagues.name} ({product.leagues.country})</span>
+                  </div>
+                )}
+
+                {product.nationalities && (
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-semibold">Nacionalidade:</span>
+                    <span>{product.nationalities.name}</span>
+                  </div>
+                )}
+
+                {product.season && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-semibold">Temporada:</span>
+                    <span>{product.season}</span>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Description */}
+              {product.description && (
+                <div>
+                  <h4 className="font-semibold mb-2">Descrição</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {product.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Special Edition Notes */}
+              {product.special_edition_notes && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                    ⭐ Edição Especial
+                  </h4>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    {product.special_edition_notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Button */}
+               <div>
+                 <Button 
+                   className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-black font-semibold"
+                   onClick={() => {
+                     onAddToCart?.(product.id);
+                     setIsDialogOpen(false);
+                   }}
+                 >
+                   <ShoppingCart className="w-4 h-4 mr-2" />
+                   Adicionar ao Carrinho
+                 </Button>
+               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

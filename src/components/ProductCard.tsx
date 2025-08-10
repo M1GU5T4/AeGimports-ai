@@ -24,7 +24,7 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCardProps) => {
   return (
-    <Card className="overflow-hidden hover-lift shadow-card border-2 border-transparent hover:border-primary/30 transition-smooth bg-card/50 backdrop-blur-sm">
+    <Card className="overflow-hidden hover-lift shadow-card border border-transparent hover:border-primary/30 transition-smooth bg-card/50 backdrop-blur-sm h-full flex flex-col">
       <CardHeader className="p-0 relative">
         <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center relative overflow-hidden">
           {product.image_url ? (
@@ -34,11 +34,11 @@ export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCard
               className="w-full h-full object-cover transition-smooth hover:scale-110"
             />
           ) : (
-            <div className="text-primary text-6xl animate-glow-pulse">⚽</div>
+            <div className="text-primary text-4xl sm:text-5xl lg:text-6xl animate-glow-pulse">⚽</div>
           )}
           {product.is_special_edition && (
-            <div className="absolute top-3 right-3">
-              <Badge variant="premium" className="rotate-12">
+            <div className="absolute top-2 right-2">
+              <Badge variant="premium" className="rotate-12 text-xs px-2 py-1">
                 ESPECIAL
               </Badge>
             </div>
@@ -46,36 +46,36 @@ export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
       </CardHeader>
       
-      <CardContent className="p-6">
-        <div className="space-y-3">
+      <CardContent className="p-3 sm:p-4 flex-1 flex flex-col">
+        <div className="space-y-2 flex-1">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-xl font-bold line-clamp-2 text-foreground">
+            <CardTitle className="text-sm sm:text-base lg:text-lg font-bold line-clamp-2 text-foreground leading-tight">
               {product.name}
             </CardTitle>
           </div>
           
-          <p className="text-lg font-semibold text-accent">{product.team_name}</p>
+          <p className="text-sm sm:text-base font-semibold text-accent">{product.team_name}</p>
           
           {product.leagues && (
-            <p className="text-sm text-muted-foreground font-medium">
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">
               🏆 {product.leagues.name} • {product.leagues.country}
             </p>
           )}
           
           {product.season && (
-            <Badge variant="outline" className="text-xs">
-              📅 Temporada {product.season}
+            <Badge variant="outline" className="text-xs w-fit">
+              📅 {product.season}
             </Badge>
           )}
           
           {product.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
               {product.description}
             </p>
           )}
           
-          <div className="flex items-center justify-between pt-4 border-t border-primary/20">
-            <span className="price-highlight text-2xl font-black">
+          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-primary/20 mt-auto">
+            <span className="price-highlight text-lg sm:text-xl lg:text-2xl font-black">
               R$ {product.price.toFixed(2)}
             </span>
             {product.special_edition_notes && (
@@ -87,21 +87,21 @@ export const ProductCard = ({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
       </CardContent>
       
-      <CardFooter className="p-6 pt-0 space-y-3">
+      <CardFooter className="p-3 sm:p-4 pt-0 space-y-2">
         <Button 
           variant="outline" 
-          size="lg" 
+          size="sm" 
           onClick={() => onViewDetails?.(product.id)}
-          className="w-full font-semibold"
+          className="w-full font-semibold text-xs sm:text-sm"
         >
           👁️ Ver Detalhes
         </Button>
         <Button 
-          size="lg" 
+          size="sm" 
           onClick={() => onAddToCart?.(product.id)}
-          className="w-full font-bold text-lg"
+          className="w-full font-bold text-xs sm:text-sm"
         >
-          🛒 Adicionar ao Carrinho
+          🛒 Adicionar
         </Button>
       </CardFooter>
     </Card>

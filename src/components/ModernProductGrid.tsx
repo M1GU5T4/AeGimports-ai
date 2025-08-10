@@ -147,11 +147,11 @@ export const ModernProductGrid = ({
         </div>
         
         {/* Loading Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+          {Array.from({ length: 12 }).map((_, i) => (
             <Card key={i} className="overflow-hidden">
               <div className="aspect-square bg-muted animate-pulse" />
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                 <div className="h-4 bg-muted animate-pulse rounded" />
                 <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
                 <div className="h-6 bg-muted animate-pulse rounded w-1/3" />
@@ -198,74 +198,76 @@ export const ModernProductGrid = ({
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="bg-gradient-to-r from-yellow-400/10 to-orange-500/10 border-yellow-400/20">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-yellow-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Edições Especiais</p>
-              <p className="text-2xl font-bold">{specialEditionProducts.length}</p>
+          <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">Edições Especiais</p>
+              <p className="text-lg sm:text-2xl font-bold">{specialEditionProducts.length}</p>
             </div>
           </CardContent>
         </Card>
         
         <Card className="bg-gradient-to-r from-green-400/10 to-emerald-500/10 border-green-400/20">
-          <CardContent className="p-4 flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-green-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Em Promoção</p>
-              <p className="text-2xl font-bold">{discountedProducts.length}</p>
+          <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">Em Promoção</p>
+              <p className="text-lg sm:text-2xl font-bold">{discountedProducts.length}</p>
             </div>
           </CardContent>
         </Card>
         
         <Card className="bg-gradient-to-r from-blue-400/10 to-purple-500/10 border-blue-400/20">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Star className="w-8 h-8 text-blue-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Bem Avaliados</p>
-              <p className="text-2xl font-bold">{topRatedProducts.length}</p>
+          <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+            <Star className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">Bem Avaliados</p>
+              <p className="text-lg sm:text-2xl font-bold">{topRatedProducts.length}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-card/50 rounded-lg border">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-card/50 rounded-lg border">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Exibindo</span>
-          <Badge variant="secondary">
+          <span className="text-xs sm:text-sm font-medium">Exibindo</span>
+          <Badge variant="secondary" className="text-xs">
             {Math.min(displayedProducts.length, products.length)} de {products.length}
           </Badge>
-          <span className="text-sm text-muted-foreground">produtos</span>
+          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">produtos</span>
         </div>
         
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           {/* Sort Options */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <SortButton option="newest" label="Mais Novos" icon={TrendingUp} />
             <SortButton option="price" label="Preço" icon={Package} />
             <SortButton option="name" label="Nome" icon={SortAsc} />
             <SortButton option="rating" label="Avaliação" icon={Star} />
           </div>
           
-          {/* View Mode Toggle */}
-          <div className="flex items-center border rounded-lg p-1">
+          {/* View Toggle */}
+          <div className="flex items-center border rounded-md ml-auto sm:ml-0">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="h-8 w-8 p-0"
+              className="rounded-r-none px-2 sm:px-3"
             >
-              <Grid3X3 className="w-4 h-4" />
+              <Grid3X3 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline ml-1">Grid</span>
             </Button>
             <Button
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="h-8 w-8 p-0"
+              className="rounded-l-none px-2 sm:px-3"
             >
-              <List className="w-4 h-4" />
+              <List className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline ml-1">Lista</span>
             </Button>
           </div>
         </div>
@@ -277,13 +279,17 @@ export const ModernProductGrid = ({
           "transition-all duration-500",
           isAnimating && "opacity-50 scale-95",
           viewMode === "grid" 
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            : "space-y-4"
+            ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 p-2 sm:p-4 md:p-6"
+            : "space-y-3 sm:space-y-4 p-2 sm:p-4"
         )}
       >
         {displayedProducts.map((product, index) => (
-          <div
+          <ModernProductCard
             key={product.id}
+            product={product}
+            onClick={() => onProductClick?.(product)}
+            onAddToCart={() => onAddToCart?.(product)}
+            viewMode={viewMode}
             className={cn(
               "transition-all duration-300",
               "hover:scale-[1.02] hover:z-10"
@@ -292,28 +298,21 @@ export const ModernProductGrid = ({
               animationDelay: `${index * 50}ms`,
               animation: isAnimating ? "none" : "fadeInUp 0.6s ease-out forwards"
             }}
-          >
-            <ModernProductCard
-              product={product}
-              onClick={() => onProductClick?.(product)}
-              onAddToCart={() => onAddToCart?.(product)}
-              viewMode={viewMode}
-            />
-          </div>
+          />
         ))}
       </div>
 
       {/* Load More */}
       {displayedProducts.length < products.length && (
-        <div className="text-center pt-8">
+        <div className="text-center pt-6 sm:pt-8">
           <Button
             onClick={loadMore}
             size="lg"
-            className="hover:scale-105 transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            className="hover:scale-105 transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 px-4 sm:px-6 py-2 sm:py-3"
           >
-            <Package className="w-4 h-4 mr-2" />
-            Carregar Mais Produtos
-            <Badge variant="secondary" className="ml-2">
+            <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+            <span className="text-sm sm:text-base">Carregar Mais</span>
+            <Badge variant="secondary" className="ml-2 text-xs sm:text-sm">
               +{Math.min(12, products.length - displayedProducts.length)}
             </Badge>
           </Button>

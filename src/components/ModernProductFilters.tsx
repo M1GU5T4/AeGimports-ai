@@ -139,28 +139,29 @@ export const ModernProductFilters = ({ onFiltersChange }: ModernProductFiltersPr
   );
 
   return (
-    <Card className="sticky top-4 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border-2 border-primary/20 shadow-xl">
-      <CardHeader className="pb-4">
+    <Card className="sticky top-2 sm:top-4 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border border-primary/20 shadow-xl">
+      <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 py-3 sm:py-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-xl font-bold">
-            <Filter className="w-5 h-5 text-primary" />
-            Filtros
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-bold">
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <span className="hidden sm:inline">Filtros</span>
+            <span className="sm:hidden">Filtrar</span>
             {hasActiveFilters && (
-              <Badge variant="secondary" className="ml-2 animate-bounce">
+              <Badge variant="secondary" className="ml-2 animate-bounce text-xs">
                 {[selectedLeague, selectedNationality, selectedSeason, specialEditionOnly, searchTerm].filter(Boolean).length}
               </Badge>
             )}
           </CardTitle>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {hasActiveFilters && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearAllFilters}
-                className="text-muted-foreground hover:text-destructive transition-colors"
+                className="text-muted-foreground hover:text-destructive transition-colors px-2 sm:px-3"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             )}
             
@@ -168,31 +169,31 @@ export const ModernProductFilters = ({ onFiltersChange }: ModernProductFiltersPr
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="lg:hidden"
+              className="xl:hidden px-2 sm:px-3"
             >
-              <Filter className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-180")} />
+              <Filter className={cn("w-3 h-3 sm:w-4 sm:h-4 transition-transform", isExpanded && "rotate-180")} />
             </Button>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className={cn(
-        "space-y-6 transition-all duration-300",
-        !isExpanded && "lg:block hidden"
+        "space-y-4 sm:space-y-6 transition-all duration-300 px-3 sm:px-6 pb-3 sm:pb-6",
+        !isExpanded && "xl:block hidden"
       )}>
         {/* Search */}
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2 text-sm font-semibold">
-            <Search className="w-4 h-4 text-primary" />
+        <div className="space-y-2 sm:space-y-3">
+          <Label className="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+            <Search className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
             Buscar
           </Label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
             <Input
               placeholder="Nome, time, descrição..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 border-2 border-border focus:border-primary transition-colors"
+              className="pl-8 sm:pl-10 border border-border focus:border-primary transition-colors text-sm"
             />
           </div>
         </div>
