@@ -1,7 +1,6 @@
 import React from "react";
 import { 
   User, 
-  Settings, 
   LogOut, 
   HelpCircle, 
   Package, 
@@ -9,7 +8,9 @@ import {
   Users, 
   BarChart3, 
   Download, 
-  Globe
+  Globe,
+  ShoppingBag,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { storeConfigService } from "@/lib/supabase";
 
 interface UserDropdownMenuProps {
   userType?: string | null;
@@ -38,6 +40,17 @@ interface UserDropdownMenuProps {
 export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  if (!user) {
+    return (
+      <Button 
+        onClick={() => navigate("/auth")}
+        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+      >
+        Entrar
+      </Button>
+    );
+  }
 
   const handleSignOut = async () => {
     try {
@@ -49,41 +62,50 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) 
     }
   };
 
+  const sanitizePhone = (phone: string) => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.startsWith("55")) return digits;
+    if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+    return digits;
+  };
+
+  const openWhatsAppSupport = async () => {
+    try {
+      const config = await storeConfigService.getConfig();
+      const rawPhone = config?.contact_phone as string | undefined;
+
+      if (!rawPhone) {
+        toast.error("Número de WhatsApp não configurado. Configure em Admin > Configurações da Loja.");
+        return;
+      }
+
+      const phone = sanitizePhone(rawPhone);
+      if (!/^\d{10,15}$/.test(phone)) {
+        toast.error("Número de WhatsApp inválido. Verifique o telefone em Configurações da Loja.");
+        return;
+      }
+
+      const text = "Olá! Preciso de suporte. Motivo: ";
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+      window.open(url, "_blank");
+    } catch (err) {
+      toast.error("Não foi possível abrir o WhatsApp. Tente novamente.");
+    }
+  };
+
   const handleMenuClick = (action: string) => {
     switch (action) {
       case "profile":
-        navigate("/admin");
-        break;
-      case "orders":
-        if (userType !== "admin") {
-          toast.info("Pedidos em desenvolvimento");
-        }
+        navigate("/profile");
         break;
       case "favorites":
-        if (userType !== "admin") {
-          toast.info("Favoritos em desenvolvimento");
-        }
-        break;
-      case "notifications":
-        if (userType !== "admin") {
-          toast.info("Notificações em desenvolvimento");
-        }
-        break;
-      case "payment":
-        if (userType !== "admin") {
-          toast.info("Métodos de pagamento em desenvolvimento");
-        }
-        break;
-      case "address":
-        if (userType !== "admin") {
-          toast.info("Endereços em desenvolvimento");
-        }
+        navigate("/favorites");
         break;
       case "help":
-        toast.info("Ajuda em desenvolvimento");
+        openWhatsAppSupport();
         break;
       case "settings":
-        toast.info("Configurações em desenvolvimento");
+        navigate("/profile");
         break;
       case "admin":
         navigate("/admin");
@@ -111,7 +133,6 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) 
     }
   };
 
-  // Função para obter as iniciais do usuário
   const getUserInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
@@ -126,12 +147,10 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) 
               {user?.email ? getUserInitials(user.email) : "U"}
             </AvatarFallback>
           </Avatar>
-
         </Button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent className="w-80" align="end" forceMount>
-        {/* Cabeçalho do usuário */}
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-2">
             <div className="flex items-center space-x-3">
@@ -160,34 +179,29 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) 
         
         <DropdownMenuSeparator />
         
-        {/* Grupo de opções da conta */}
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => handleMenuClick("profile")}>
             <User className="mr-2 h-4 w-4" />
             <span>Meu Perfil</span>
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
+          
+          {userType !== "admin" && (
+            <>
+              <DropdownMenuItem onClick={() => handleMenuClick("favorites")}>
+                <Heart className="mr-2 h-4 w-4" />
+                <span>Favoritos</span>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuGroup>
         
         <DropdownMenuSeparator />
         
-        {/* Grupo de configurações */}
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => handleMenuClick("settings")}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configurações</span>
-            <DropdownMenuShortcut>⌘,</DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        
-        <DropdownMenuSeparator />
-        
-        {/* Opções especiais */}
         {userType === "admin" && (
           <>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <Settings className="mr-2 h-4 w-4" />
                 <span>Painel Admin</span>
                 <Badge variant="secondary" className="ml-auto text-xs">👑</Badge>
               </DropdownMenuSubTrigger>
@@ -203,7 +217,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) 
                   <Plus className="mr-2 h-4 w-4" /> Adicionar Produto
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleMenuClick("admin-settings")}>
-                  <Settings className="mr-2 h-4 w-4" /> Configurações da Loja
+                  Configurações da Loja
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleMenuClick("admin-clients")}>
@@ -228,7 +242,6 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ userType }) 
         
         <DropdownMenuSeparator />
         
-        {/* Logout */}
         <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Sair</span>

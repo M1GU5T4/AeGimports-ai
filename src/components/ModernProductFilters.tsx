@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,14 @@ export const ModernProductFilters = ({ onFiltersChange }: ModernProductFiltersPr
   }, []);
 
   useEffect(() => {
-    const filters: any = {};
+    const filters: {
+      league?: string;
+      nationality?: string;
+      season?: string;
+      specialEdition?: boolean;
+      priceRange?: [number, number];
+      searchTerm?: string;
+    } = {};
     if (selectedLeague) filters.league = selectedLeague;
     if (selectedNationality) filters.nationality = selectedNationality;
     if (selectedSeason) filters.season = selectedSeason;
@@ -69,7 +76,7 @@ export const ModernProductFilters = ({ onFiltersChange }: ModernProductFiltersPr
     if (searchTerm) filters.searchTerm = searchTerm;
     
     onFiltersChange(filters);
-  }, [selectedLeague, selectedNationality, selectedSeason, specialEditionOnly, priceRange, searchTerm]);
+  }, [selectedLeague, selectedNationality, selectedSeason, specialEditionOnly, priceRange, searchTerm, onFiltersChange]);
 
   const loadFiltersData = async () => {
     try {
@@ -109,7 +116,7 @@ export const ModernProductFilters = ({ onFiltersChange }: ModernProductFiltersPr
     isActive: boolean;
     onClick: () => void;
     onRemove?: () => void;
-    icon?: any;
+    icon?: React.ComponentType<{ className?: string }>;
     variant?: "default" | "special";
   }) => (
     <Badge

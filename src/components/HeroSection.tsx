@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Sparkles, TrendingUp, Star } from "lucide-react";
+import { ChevronRight, Sparkles, TrendingUp, Star, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
@@ -14,12 +14,31 @@ interface Product {
 
 interface HeroSectionProps {
   onExploreClick?: () => void;
+  onAddToCart?: (product: Product) => void;
 }
 
-export const HeroSection = ({ onExploreClick }: HeroSectionProps) => {
+export const HeroSection = ({ onExploreClick, onAddToCart }: HeroSectionProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scrollY, setScrollY] = useState(0);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Parallax scroll effect
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
   
   const heroSlides = [
     {
@@ -72,28 +91,54 @@ export const HeroSection = ({ onExploreClick }: HeroSectionProps) => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   const currentHero = heroSlides[currentSlide];
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-background via-background/95 to-primary/5">
-      {/* Animated Background Elements */}
+    <div className="relative overflow-hidden bg-gradient-to-br from-background via-background/95 to-primary/5 min-h-screen">
+      {/* Dynamic Background with Mouse Tracking */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-accent/20 to-primary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-spin" style={{ animationDuration: '20s' }}></div>
+        <div 
+          className="absolute w-80 h-80 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl animate-pulse transition-all duration-1000"
+          style={{
+            top: `${-160 + scrollY * 0.1}px`,
+            right: `${-160 + mousePosition.x * 0.02}px`,
+          }}
+        ></div>
+        <div 
+          className="absolute w-80 h-80 bg-gradient-to-tr from-accent/20 to-primary/20 rounded-full blur-3xl animate-pulse transition-all duration-1000"
+          style={{
+            bottom: `${-160 - scrollY * 0.05}px`,
+            left: `${-160 + mousePosition.y * 0.01}px`,
+            animationDelay: '2s'
+          }}
+        ></div>
+        <div 
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-spin transition-all duration-500"
+          style={{
+            animationDuration: '20s',
+            transform: `translate(-50%, -50%) scale(${1 + scrollY * 0.0005})`,
+          }}
+        ></div>
+        
+        {/* Floating Geometric Shapes */}
+        <div className="absolute top-20 left-20 w-4 h-4 bg-primary/30 rotate-45 animate-bounce" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-40 right-32 w-6 h-6 bg-accent/40 rounded-full animate-pulse" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute bottom-32 left-1/4 w-3 h-3 bg-primary/50 animate-ping" style={{ animationDelay: '2s' }}></div>
       </div>
 
       <div className="relative container mx-auto px-4 py-20 lg:py-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Content */}
-          <div className="space-y-8 animate-fade-in">
+        {/* Bento Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 h-screen max-h-[800px]">
+          
+          {/* Main Title Card - Takes up large space */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 row-span-2 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl border border-primary/20 rounded-3xl p-8 flex flex-col justify-center space-y-6 animate-fade-in hover:scale-[1.02] transition-all duration-500 group">
             {/* Badge */}
             <div className="flex items-center space-x-3">
               <Badge 
                 variant="outline" 
-                className={`bg-gradient-to-r ${currentHero.gradient} text-white border-0 px-4 py-2 text-sm font-semibold animate-bounce`}
+                className={`bg-gradient-to-r ${currentHero.gradient} text-white border-0 px-4 py-2 text-sm font-semibold animate-bounce hover:scale-110 transition-transform`}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 {currentHero.highlight}
@@ -103,7 +148,7 @@ export const HeroSection = ({ onExploreClick }: HeroSectionProps) => {
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-125 ${
                       index === currentSlide ? 'bg-primary w-8' : 'bg-primary/30'
                     }`}
                   />
@@ -113,7 +158,7 @@ export const HeroSection = ({ onExploreClick }: HeroSectionProps) => {
 
             {/* Title */}
             <div className="space-y-4">
-              <h1 className="text-5xl lg:text-7xl font-black leading-tight">
+              <h1 className="text-4xl lg:text-6xl xl:text-7xl font-black leading-tight group-hover:scale-105 transition-transform duration-500">
                 <span className="block text-foreground animate-slide-up">
                   {currentHero.title}
                 </span>
@@ -122,35 +167,16 @@ export const HeroSection = ({ onExploreClick }: HeroSectionProps) => {
                 </span>
               </h1>
               
-              <p className="text-xl text-muted-foreground max-w-lg leading-relaxed animate-slide-up" style={{ animationDelay: '0.4s' }}>
+              <p className="text-lg lg:text-xl text-muted-foreground max-w-lg leading-relaxed animate-slide-up opacity-80 group-hover:opacity-100 transition-opacity duration-500" style={{ animationDelay: '0.4s' }}>
                 {currentHero.description}
               </p>
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center space-x-8 animate-slide-up" style={{ animationDelay: '0.6s' }}>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary">500+</div>
-                <div className="text-sm text-muted-foreground">Produtos</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary">50+</div>
-                <div className="text-sm text-muted-foreground">Times</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary">4.9</div>
-                <div className="text-sm text-muted-foreground flex items-center">
-                  <Star className="w-3 h-3 fill-primary text-primary mr-1" />
-                  Avaliação
-                </div>
-              </div>
-            </div>
-
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 animate-slide-up" style={{ animationDelay: '0.8s' }}>
+            <div className="flex flex-col sm:flex-row gap-4 animate-slide-up" style={{ animationDelay: '0.6s' }}>
               <Button 
                 size="lg" 
-                className={`bg-gradient-to-r ${currentHero.gradient} hover:scale-105 transition-all duration-300 text-white border-0 px-8 py-6 text-lg font-semibold shadow-2xl`}
+                className={`bg-gradient-to-r ${currentHero.gradient} hover:scale-105 transition-all duration-300 text-white border-0 px-8 py-6 text-lg font-semibold shadow-2xl group-hover:shadow-3xl`}
                 onClick={onExploreClick}
               >
                 Explorar Coleção
@@ -168,45 +194,96 @@ export const HeroSection = ({ onExploreClick }: HeroSectionProps) => {
             </div>
           </div>
 
-          {/* Visual Element */}
-          <div className="relative animate-fade-in" style={{ animationDelay: '1s' }}>
+          {/* Stats Card 1 - Products */}
+          <div className="col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-xl border border-primary/20 rounded-3xl p-6 flex flex-col justify-center items-center space-y-3 animate-fade-in hover:scale-105 transition-all duration-500 cursor-pointer group" style={{ animationDelay: '0.2s' }}>
+            <div className="text-4xl font-black text-primary group-hover:scale-110 transition-transform">500+</div>
+            <div className="text-sm text-muted-foreground font-medium">Produtos</div>
+            <div className="w-full h-1 bg-gradient-to-r from-primary/20 to-primary rounded-full group-hover:from-primary/40 group-hover:to-primary/60 transition-all duration-500"></div>
+          </div>
+
+          {/* Stats Card 2 - Teams */}
+          <div className="col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 bg-gradient-to-br from-accent/10 to-accent/5 backdrop-blur-xl border border-accent/20 rounded-3xl p-6 flex flex-col justify-center items-center space-y-3 animate-fade-in hover:scale-105 transition-all duration-500 cursor-pointer group" style={{ animationDelay: '0.4s' }}>
+            <div className="text-4xl font-black text-accent group-hover:scale-110 transition-transform">50+</div>
+            <div className="text-sm text-muted-foreground font-medium">Times</div>
+            <div className="w-full h-1 bg-gradient-to-r from-accent/20 to-accent rounded-full group-hover:from-accent/40 group-hover:to-accent/60 transition-all duration-500"></div>
+          </div>
+
+          {/* Rating Card */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-yellow-500/10 to-orange-500/5 backdrop-blur-xl border border-yellow-500/20 rounded-3xl p-6 flex flex-col justify-center items-center space-y-4 animate-fade-in hover:scale-105 transition-all duration-500 cursor-pointer group" style={{ animationDelay: '0.6s' }}>
+            <div className="flex items-center space-x-2">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-6 h-6 fill-yellow-500 text-yellow-500 group-hover:scale-110 transition-transform" style={{ animationDelay: `${i * 0.1}s` }} />
+              ))}
+            </div>
+            <div className="text-3xl font-black text-yellow-600 group-hover:scale-110 transition-transform">4.9</div>
+            <div className="text-sm text-muted-foreground font-medium text-center">Avaliação dos Clientes</div>
+            <div className="text-xs text-muted-foreground/70">+1.2k avaliações</div>
+          </div>
+
+          {/* Featured Product Card */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-6 row-span-1 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl border border-primary/20 rounded-3xl p-8 flex items-center justify-center space-x-8 animate-fade-in hover:scale-[1.02] transition-all duration-500 group" style={{ animationDelay: '0.8s' }}>
+            
+            {/* Product Image */}
             <div className="relative">
-              {/* Main Circle */}
-              <div className={`w-96 h-96 mx-auto bg-gradient-to-br ${currentHero.gradient} rounded-full flex items-center justify-center shadow-2xl animate-float`}>
-                <div className="w-80 h-80 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center overflow-hidden">
+              <div className={`w-48 h-48 bg-gradient-to-br ${currentHero.gradient} rounded-3xl flex items-center justify-center shadow-2xl animate-float group-hover:shadow-3xl transition-all duration-500`}>
+                <div className="w-40 h-40 bg-background/90 backdrop-blur-sm rounded-2xl flex items-center justify-center overflow-hidden">
                   {loading ? (
-                    <div className="text-8xl animate-bounce">⚽</div>
+                    <div className="text-6xl animate-bounce">⚽</div>
                   ) : featuredProducts.length > 0 ? (
                     <img
                       src={featuredProducts[currentSlide % featuredProducts.length]?.image_url}
                       alt={featuredProducts[currentSlide % featuredProducts.length]?.name}
-                      className="w-64 h-64 object-contain animate-pulse hover:scale-105 transition-transform duration-300"
+                      className="w-32 h-32 object-contain group-hover:scale-110 transition-transform duration-500"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         e.currentTarget.nextElementSibling?.classList.remove('hidden');
                       }}
                     />
                   ) : (
-                    <div className="text-8xl animate-bounce">⚽</div>
+                    <div className="text-6xl animate-bounce">⚽</div>
                   )}
-                  {/* Fallback emoji (hidden by default) */}
-                  <div className="text-8xl animate-bounce hidden">⚽</div>
+                  <div className="text-6xl animate-bounce hidden">⚽</div>
                 </div>
               </div>
               
-              {/* Floating Elements */}
-              <div className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-lg animate-bounce" style={{ animationDelay: '1s' }}>
-                <Sparkles className="w-8 h-8 text-white" />
+              {/* Floating Interactive Elements */}
+              <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-lg animate-bounce cursor-pointer hover:scale-110 transition-transform" style={{ animationDelay: '1s' }}>
+                <Sparkles className="w-6 h-6 text-white" />
               </div>
               
-              <div className="absolute -bottom-8 -left-8 w-20 h-20 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center shadow-lg animate-bounce" style={{ animationDelay: '2s' }}>
-                <Star className="w-10 h-10 text-white fill-white" />
-              </div>
-              
-              <div className="absolute top-1/2 -left-12 w-12 h-12 bg-gradient-to-br from-primary/80 to-accent/80 rounded-full flex items-center justify-center shadow-lg animate-bounce" style={{ animationDelay: '0.5s' }}>
-                <TrendingUp className="w-6 h-6 text-white" />
+              <div className="absolute -bottom-4 -left-4 w-14 h-14 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center shadow-lg animate-bounce cursor-pointer hover:scale-110 transition-transform" style={{ animationDelay: '2s' }}>
+                <Star className="w-7 h-7 text-white fill-white" />
               </div>
             </div>
+
+            {/* Product Info */}
+            {!loading && featuredProducts.length > 0 && (
+              <div className="flex-1 space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                    {featuredProducts[currentSlide % featuredProducts.length]?.name}
+                  </h3>
+                  <p className="text-lg text-muted-foreground">
+                    {featuredProducts[currentSlide % featuredProducts.length]?.team_name}
+                  </p>
+                </div>
+                <div className="text-3xl font-black text-primary">
+                  R$ {featuredProducts[currentSlide % featuredProducts.length]?.price?.toFixed(2)}
+                </div>
+                <Button className="bg-gradient-to-r from-primary to-accent hover:scale-105 transition-all duration-300 text-white"
+                  onClick={() => {
+                    const product = featuredProducts[currentSlide % featuredProducts.length];
+                    if (product) {
+                      onAddToCart?.(product);
+                    }
+                  }}
+                  disabled={loading || featuredProducts.length === 0}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Adicionar ao Carrinho
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

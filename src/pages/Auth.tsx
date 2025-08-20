@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import WhatsAppVerification from "@/components/WhatsAppVerification";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -17,6 +18,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showWhatsAppVerification, setShowWhatsAppVerification] = useState(false);
+  const [pendingSignUpData, setPendingSignUpData] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,16 +38,53 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      // Validar dados antes de prosseguir
+      if (!fullName || !phone || !email || !password) {
+        toast.error("Todos os campos são obrigatórios");
+        return;
+      }
+
+      // Validar formato do telefone
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+        toast.error("Número de telefone inválido");
+        return;
+      }
+
+      // Armazenar dados para usar após verificação do WhatsApp
+      setPendingSignUpData({
+        email,
+        password,
+        fullName,
+        phone
+      });
+
+      // Mostrar tela de verificação do WhatsApp
+      setShowWhatsAppVerification(true);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao processar cadastro";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWhatsAppVerificationSuccess = async () => {
+    if (!pendingSignUpData) return;
+
+    setLoading(true);
+    try {
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: pendingSignUpData.email,
+        password: pendingSignUpData.password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName,
-            phone: phone
+            full_name: pendingSignUpData.fullName,
+            phone: pendingSignUpData.phone,
+            phone_verified: true // Marcar como verificado
           }
         }
       });
@@ -53,12 +93,21 @@ export default function Auth() {
 
       if (data.user) {
         toast.success("Conta criada com sucesso! Verifique seu email para confirmar.");
+        setShowWhatsAppVerification(false);
+        setPendingSignUpData(null);
       }
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao criar conta");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar conta";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancelWhatsAppVerification = () => {
+    setShowWhatsAppVerification(false);
+    setPendingSignUpData(null);
+    setLoading(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -75,21 +124,35 @@ export default function Auth() {
 
       if (data.user) {
         toast.success("Login realizado com sucesso!");
-        window.location.href = "/";
+        navigate("/");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer login");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao fazer login";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  // Se está mostrando verificação do WhatsApp, renderizar apenas esse componente
+  if (showWhatsAppVerification && pendingSignUpData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-dark p-4">
+        <WhatsAppVerification
+          phoneNumber={pendingSignUpData.phone}
+          onVerificationSuccess={handleWhatsAppVerificationSuccess}
+          onCancel={handleCancelWhatsAppVerification}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center gradient-dark p-4">
       <Card className="w-full max-w-md shadow-elegant border-2 border-primary/30 bg-card/95 backdrop-blur-sm">
         <CardHeader className="text-center gradient-primary rounded-t-lg">
           <CardTitle className="text-3xl font-bold text-accent-foreground animate-glow-pulse">
-            ⚽ FutebolShirts
+            A&GImports
           </CardTitle>
           <CardDescription className="text-accent-foreground/80 font-medium">
             Entre ou crie sua conta para continuar

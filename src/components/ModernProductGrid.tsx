@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ModernProductCard } from "./ModernProductCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
   Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { favoriteService } from "@/lib/customerServices";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -48,17 +50,51 @@ export const ModernProductGrid = ({
   onAddToCart 
 }: ModernProductGridProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   const [itemsToShow, setItemsToShow] = useState(12);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Carregar favoritos do usuário
   useEffect(() => {
-    sortProducts();
-  }, [products, sortBy, sortDirection]);
+    const loadFavorites = async () => {
+      try {
+        const userFavorites = await favoriteService.getAll();
+        const favoriteIds = new Set(userFavorites.map(fav => fav.product_id));
+        setFavorites(favoriteIds);
+      } catch (error) {
+        console.error('Erro ao carregar favoritos:', error);
+      }
+    };
 
-  const sortProducts = () => {
+    loadFavorites();
+  }, []);
+
+  // Função para toggle de favoritos
+  const handleToggleFavorite = async (productId: string) => {
+    try {
+      const isFavorite = favorites.has(productId);
+      
+      if (isFavorite) {
+        await favoriteService.remove(productId);
+        setFavorites(prev => {
+          const newFavorites = new Set(prev);
+          newFavorites.delete(productId);
+          return newFavorites;
+        });
+      } else {
+        await favoriteService.add(productId);
+        setFavorites(prev => new Set([...prev, productId]));
+      }
+    } catch (error) {
+      console.error('Erro ao alterar favorito:', error);
+      toast.error('Erro ao alterar favorito');
+    }
+  };
+
+  const sortProducts = useCallback(() => {
     setIsAnimating(true);
     
     setTimeout(() => {
@@ -89,7 +125,11 @@ export const ModernProductGrid = ({
       setDisplayedProducts(sorted.slice(0, itemsToShow));
       setIsAnimating(false);
     }, 300);
-  };
+  }, [products, sortBy, sortDirection, itemsToShow]);
+
+  useEffect(() => {
+    sortProducts();
+  }, [products, sortBy, sortDirection, sortProducts]);
 
   const handleSortChange = (newSortBy: SortOption) => {
     if (sortBy === newSortBy) {
@@ -111,15 +151,16 @@ export const ModernProductGrid = ({
   const SortButton = ({ option, label, icon: Icon }: { 
     option: SortOption; 
     label: string; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
   }) => (
     <Button
       variant={sortBy === option ? "default" : "ghost"}
       size="sm"
       onClick={() => handleSortChange(option)}
       className={cn(
-        "transition-all duration-300 hover:scale-105",
-        sortBy === option && "bg-primary text-primary-foreground shadow-lg"
+        "btn-premium transition-all duration-300 hover:scale-105 hover-gold-glow",
+        "border border-gold/20 hover:border-gold/40",
+        sortBy === option && "bg-gradient-gold text-black shadow-elegant animate-gold-glow"
       )}
     >
       <Icon className="w-4 h-4 mr-1" />
@@ -197,47 +238,15 @@ export const ModernProductGrid = ({
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="bg-gradient-to-r from-yellow-400/10 to-orange-500/10 border-yellow-400/20">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-muted-foreground">Edições Especiais</p>
-              <p className="text-lg sm:text-2xl font-bold">{specialEditionProducts.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-r from-green-400/10 to-emerald-500/10 border-green-400/20">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-muted-foreground">Em Promoção</p>
-              <p className="text-lg sm:text-2xl font-bold">{discountedProducts.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-r from-blue-400/10 to-purple-500/10 border-blue-400/20">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-            <Star className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-muted-foreground">Bem Avaliados</p>
-              <p className="text-lg sm:text-2xl font-bold">{topRatedProducts.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-card/50 rounded-lg border">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 card-premium bg-gradient-dark rounded-lg border border-gold/20 hover-premium-lift">
         <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm font-medium">Exibindo</span>
-          <Badge variant="secondary" className="text-xs">
+          <span className="text-xs sm:text-sm font-medium text-gold">Exibindo</span>
+          <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-gold/30">
             {Math.min(displayedProducts.length, products.length)} de {products.length}
           </Badge>
-          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">produtos</span>
+          <span className="text-xs sm:text-sm text-gold/70 hidden sm:inline">produtos</span>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
@@ -250,12 +259,15 @@ export const ModernProductGrid = ({
           </div>
           
           {/* View Toggle */}
-          <div className="flex items-center border rounded-md ml-auto sm:ml-0">
+          <div className="flex items-center border border-gold/20 rounded-md ml-auto sm:ml-0 bg-black/20">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="rounded-r-none px-2 sm:px-3"
+              className={cn(
+                "rounded-r-none px-2 sm:px-3 transition-all duration-300",
+                viewMode === "grid" ? "bg-gradient-gold text-black" : "text-gold hover:text-black hover:bg-gold/20"
+              )}
             >
               <Grid3X3 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline ml-1">Grid</span>
@@ -264,7 +276,10 @@ export const ModernProductGrid = ({
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="rounded-l-none px-2 sm:px-3"
+              className={cn(
+                "rounded-l-none px-2 sm:px-3 transition-all duration-300",
+                viewMode === "list" ? "bg-gradient-gold text-black" : "text-gold hover:text-black hover:bg-gold/20"
+              )}
             >
               <List className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline ml-1">Lista</span>
@@ -289,10 +304,13 @@ export const ModernProductGrid = ({
             product={product}
             onClick={() => onProductClick?.(product)}
             onAddToCart={() => onAddToCart?.(product)}
+            onToggleFavorite={() => handleToggleFavorite(product.id)}
+            isFavorite={favorites.has(product.id)}
             viewMode={viewMode}
             className={cn(
-              "transition-all duration-300",
-              "hover:scale-[1.02] hover:z-10"
+              "transition-all duration-300 animate-card-entrance hover-premium-lift",
+              "hover:scale-[1.02] hover:z-10 card-premium",
+              `stagger-${Math.min(index % 5 + 1, 5)}`
             )}
             style={{
               animationDelay: `${index * 50}ms`,
@@ -308,11 +326,11 @@ export const ModernProductGrid = ({
           <Button
             onClick={loadMore}
             size="lg"
-            className="hover:scale-105 transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 px-4 sm:px-6 py-2 sm:py-3"
+            className="btn-primary hover:scale-105 transition-all duration-300 bg-gradient-gold text-black hover-gold-glow animate-premium-shine px-4 sm:px-6 py-2 sm:py-3 shadow-elegant"
           >
             <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-            <span className="text-sm sm:text-base">Carregar Mais</span>
-            <Badge variant="secondary" className="ml-2 text-xs sm:text-sm">
+            <span className="text-sm sm:text-base font-semibold">Carregar Mais</span>
+            <Badge variant="secondary" className="ml-2 text-xs sm:text-sm bg-black/20 text-gold border-gold/30">
               +{Math.min(12, products.length - displayedProducts.length)}
             </Badge>
           </Button>
