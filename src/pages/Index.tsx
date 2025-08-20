@@ -175,8 +175,20 @@ const Index = () => {
     }
 
     try {
-      // Para simplificar, vamos usar um size_id padrão ou o primeiro disponível
-      const defaultSizeId = '00000000-0000-0000-0000-000000000001'; // ID padrão temporário
+      // Buscar o primeiro tamanho disponível
+      const { data: sizes, error: sizesError } = await supabase
+        .from('sizes')
+        .select('id')
+        .order('sort_order')
+        .limit(1);
+
+      if (sizesError || !sizes || sizes.length === 0) {
+        console.error('Error fetching sizes:', sizesError);
+        toast.error('Erro ao buscar tamanhos disponíveis');
+        return;
+      }
+
+      const defaultSizeId = sizes[0].id;
       await cartService.addToCart({
         product_id: product.id,
         size_id: defaultSizeId,

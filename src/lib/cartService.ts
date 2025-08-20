@@ -20,6 +20,12 @@ export interface CartItemInput {
 export const cartService = {
   // Obter todos os itens do carrinho do usuário
   async getCartItems(): Promise<CartItem[]> {
+    // Obter o usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('cart_items')
       .select(`
@@ -34,7 +40,8 @@ export const cartService = {
           nationality:nationalities(name)
         )
       `)
-      .order('added_at', { ascending: false });
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching cart items:', error);
@@ -46,12 +53,19 @@ export const cartService = {
 
   // Adicionar item ao carrinho
   async addToCart(item: CartItemInput): Promise<CartItem> {
+    // Obter o usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
     // Verificar se o item já existe no carrinho
     const { data: existingItem } = await supabase
       .from('cart_items')
       .select('*')
       .eq('product_id', item.product_id)
       .eq('size_id', item.size_id)
+      .eq('user_id', user.id)
       .single();
 
     if (existingItem) {
@@ -59,10 +73,13 @@ export const cartService = {
       return await this.updateQuantity(existingItem.id, existingItem.quantity + item.quantity);
     }
 
-    // Se não existe, criar novo item
+    // Se não existe, criar novo item incluindo o user_id
     const { data, error } = await supabase
       .from('cart_items')
-      .insert([item])
+      .insert([{
+        ...item,
+        user_id: user.id
+      }])
       .select(`
         *,
         product:products(
