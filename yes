@@ -1,0 +1,5 @@
+[33m04461b0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix: Resolve Profile component initialization error and prepare for deployment
+[33mfda2e64[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m incrementação feita dia 09/08
+[33m4420ed8[m estilização incrementada
+[33mb6f87d9[m feat: Implementar painel administrativo completo com upload de imagens e políticas RLS
+[33m7cab08b[m Add e-commerce styling
